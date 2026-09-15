@@ -1,0 +1,10 @@
+{
+  "description": "This AI-powered harassment detection platform enhances university safety by enabling real-time monitoring, incident management, and communication for admins, students, and parents.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
