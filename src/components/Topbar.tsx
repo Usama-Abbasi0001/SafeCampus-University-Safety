@@ -18,9 +18,9 @@ const RoleLabels: Record<Role, string> = {
 };
 
 const roleBadgeColors: Record<Role, string> = {
-  admin: "bg-purple-100 text-purple-700",
-  student: "bg-blue-100 text-blue-700",
-  parent: "bg-green-100 text-green-700",
+  admin: "bg-purple-500/20 text-purple-300",
+  student: "bg-blue-500/20 text-blue-300",
+  parent: "bg-teal-500/20 text-teal-300",
 };
 
 const BellIcon = () => (
@@ -49,9 +49,9 @@ export default function Topbar({ role, userName, notifications, onLogout, pageTi
   };
 
   return (
-    <header className="h-16 bg-white border-b border-gray-100 flex items-center px-6 gap-4 shrink-0 relative z-20">
+    <header className="h-16 bg-slate-800/50 backdrop-blur-sm border-b border-slate-700/50 flex items-center px-6 gap-4 shrink-0 relative z-20">
       <div className="flex-1">
-        <h1 className="text-lg font-semibold text-gray-900" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        <h1 className="text-lg font-semibold text-white" style={{ fontFamily: "'DM Sans', sans-serif" }}>
           {pageTitle}
         </h1>
       </div>
@@ -61,7 +61,7 @@ export default function Topbar({ role, userName, notifications, onLogout, pageTi
         <div className="relative">
           <button
             onClick={() => setShowNotifs((v) => !v)}
-            className="ripple-wrapper w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600 transition-colors relative"
+            className="ripple-wrapper w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-700 text-slate-300 hover:text-white transition-colors relative"
             onMouseDown={addRipple}
           >
             <BellIcon />
@@ -73,24 +73,24 @@ export default function Topbar({ role, userName, notifications, onLogout, pageTi
           </button>
 
           {showNotifs && (
-            <div className="absolute right-0 top-12 w-80 bg-white rounded-xl shadow-xl border border-gray-100 z-50 animate-fade-in overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                <span className="font-semibold text-sm text-gray-900">Notifications</span>
+            <div className="absolute right-0 top-12 w-80 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 z-50 animate-fade-in overflow-hidden">
+              <div className="px-4 py-3 border-b border-slate-700 flex items-center justify-between">
+                <span className="font-semibold text-sm text-white">Notifications</span>
                 {unread > 0 && (
-                  <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium">
+                  <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-medium">
                     {unread} new
                   </span>
                 )}
               </div>
-              <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
+              <div className="max-h-72 overflow-y-auto divide-y divide-slate-700/50">
                 {notifications.map((n) => (
-                  <div key={n.id} className={`px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer ${!n.read ? "bg-blue-50/40" : ""}`}>
+                  <div key={n.id} className={`px-4 py-3 hover:bg-slate-700 transition-colors cursor-pointer ${!n.read ? "bg-slate-700/40" : ""}`}>
                     <div className="flex gap-2.5 items-start">
                       <span className="text-base shrink-0 mt-0.5">{typeIcon(n.type)}</span>
                       <div className="min-w-0">
-                        <p className="text-xs font-semibold text-gray-800 truncate">{n.title}</p>
-                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{n.message}</p>
-                        <p className="text-[10px] text-gray-400 mt-1">{n.time}</p>
+                        <p className="text-xs font-semibold text-white truncate">{n.title}</p>
+                        <p className="text-xs text-slate-400 mt-0.5 line-clamp-2">{n.message}</p>
+                        <p className="text-[10px] text-slate-500 mt-1">{n.time}</p>
                       </div>
                       {!n.read && <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0 mt-1" />}
                     </div>
@@ -102,14 +102,14 @@ export default function Topbar({ role, userName, notifications, onLogout, pageTi
         </div>
 
         {/* User pill */}
-        <div className="flex items-center gap-2.5 pl-3 border-l border-gray-200">
+        <div className="flex items-center gap-2.5 pl-3 border-l border-slate-700/50">
           <div className="text-right">
-            <p className="text-sm font-semibold text-gray-900 leading-tight">{userName}</p>
-            <p className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full inline-block ${roleBadgeColors[role]}`}>
+            <p className="text-sm font-semibold text-white leading-tight">{userName}</p>
+            <p className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full inline-block mt-0.5 ${roleBadgeColors[role]}`}>
               {RoleLabels[role]}
             </p>
           </div>
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm overflow-hidden shrink-0">
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm overflow-hidden shrink-0 ring-2 ring-slate-800">
             {userPhoto ? (
               <img src={userPhoto} alt={userName} className="w-full h-full object-cover" />
             ) : (
@@ -118,7 +118,7 @@ export default function Topbar({ role, userName, notifications, onLogout, pageTi
           </div>
           <button
             onClick={onLogout}
-            className="ripple-wrapper ml-1 w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+            className="ripple-wrapper ml-1 w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
             onMouseDown={addRipple}
             title="Logout"
           >

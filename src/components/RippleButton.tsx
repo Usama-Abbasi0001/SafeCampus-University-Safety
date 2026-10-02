@@ -10,10 +10,10 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses = {
   primary: "bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800",
-  secondary: "bg-slate-700 text-white hover:bg-slate-800",
+  secondary: "bg-slate-700 text-white hover:bg-slate-600",
   danger: "bg-red-600 text-white hover:bg-red-700",
-  ghost: "text-slate-700 hover:bg-slate-100",
-  outline: "border border-slate-300 text-slate-700 hover:bg-slate-50",
+  ghost: "text-slate-300 hover:bg-slate-800",
+  outline: "border border-slate-600 text-slate-200 hover:bg-slate-800",
 };
 
 const sizeClasses = {
@@ -43,7 +43,7 @@ export default function RippleButton({
     <button
       {...rest}
       onClick={handleClick}
-      className={`ripple-wrapper inline-flex items-center justify-center rounded-lg font-medium transition-colors duration-150 select-none ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+      className={`ripple-wrapper inline-flex items-center justify-center rounded-lg font-medium transition-colors duration-150 select-none disabled:opacity-50 disabled:cursor-not-allowed ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
     >
       {icon && <span className="shrink-0">{icon}</span>}
       {children}

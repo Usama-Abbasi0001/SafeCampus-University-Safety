@@ -14,6 +14,8 @@ interface Props {
   role: Role;
   currentPage: AnyPage;
   onNavigate: (page: AnyPage) => void;
+  unreadAlerts?: number;
+  unreadNotifications?: number;
 }
 
 const Icon = ({ path, path2 }: { path: string; path2?: string }) => (
@@ -29,6 +31,7 @@ const adminNav: NavItem[] = [
   { id: "harassment-alerts",  label: "Harassment Alerts",  icon: <Icon path="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01" /> },
   { id: "incident-management",label: "Incident Management",icon: <Icon path="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" path2="M14 2v6h6M16 13H8M16 17H8M10 9H8" /> },
   { id: "student-management", label: "Student Management", icon: <Icon path="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /> },
+  { id: "parent-management",  label: "Parent Management",  icon: <Icon path="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /> },
   { id: "camera-management",  label: "Camera Management",  icon: <Icon path="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" path2="M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8" /> },
   { id: "reports",            label: "Reports",            icon: <Icon path="M18 20V10M12 20V4M6 20v-6" /> },
   { id: "settings",           label: "Settings",           icon: <Icon path="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /> },
@@ -74,7 +77,7 @@ const roleDot: Record<Role, string> = {
   parent: "bg-teal-400",
 };
 
-export default function Sidebar({ role, currentPage, onNavigate }: Props) {
+export default function Sidebar({ role, currentPage, onNavigate, unreadAlerts = 0, unreadNotifications = 0 }: Props) {
   const addRipple = useRipple(true);
   const nav = navByRole[role];
 
@@ -123,8 +126,8 @@ export default function Sidebar({ role, currentPage, onNavigate }: Props) {
             >
               <span className={isActive ? "text-blue-400" : "text-white/40"}>{item.icon}</span>
               {item.label}
-              {item.id === "harassment-alerts" && <span className="ml-auto bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">3</span>}
-              {item.id === "notifications" && <span className="ml-auto bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">2</span>}
+              {item.id === "harassment-alerts" && unreadAlerts > 0 && <span className="ml-auto bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{unreadAlerts}</span>}
+              {item.id === "notifications" && unreadNotifications > 0 && <span className="ml-auto bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{unreadNotifications}</span>}
             </button>
           );
         })}

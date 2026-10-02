@@ -1,6 +1,6 @@
 export type Role = "admin" | "student" | "parent";
 
-export type IncidentStatus = "New" | "Under Review" | "Confirmed" | "Rejected" | "Resolved";
+export type IncidentStatus = "New" | "Pending Review" | "Under Review" | "Confirmed" | "Rejected" | "Resolved";
 
 export type HarassmentType =
   | "Verbal Harassment"
@@ -11,17 +11,35 @@ export type HarassmentType =
 
 export type SafetyStatus = "Safe" | "Alert" | "Incident Under Review";
 
+export interface PersonDetails {
+  studentId: string;
+  name: string;
+  fatherName?: string;
+  rollNumber?: string;
+  department?: string;
+  semester?: string;
+  email?: string;
+  phone?: string;
+  profilePicture?: string;
+  faceRecognitionStatus?: string;
+}
+
 export interface Incident {
   id: string;
-  type: HarassmentType;
-  victim: string;
-  victimId: string;
-  victimDept: string;
-  victimSemester: string;
-  suspectedPerson: string;
+  type: string; // Changed to string to allow 'Watching / Continuous Watching'
+  victim: PersonDetails | string;
+  harasser?: PersonDetails | string;
+  duration?: number;
+  // Legacy fields below:
+  victimId?: string;
+  victimDept?: string;
+  victimSemester?: string;
+  suspectedPerson?: string;
   date: string;
   time: string;
   location: string;
+  latitude?: number;
+  longitude?: number;
   cameraId: string;
   aiConfidence: number;
   status: IncidentStatus;
@@ -40,6 +58,21 @@ export interface Student {
   status: "Active" | "Inactive";
   safetyStatus: SafetyStatus;
   email: string;
+}
+
+export interface Parent {
+  _id?: string;
+  id?: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  profilePicture?: string;
+  photo?: string;
+  registrationNumber?: string;
+  linkedStudentId?: string;
+  linkedStudentName?: string;
+  status: "Active" | "Inactive";
 }
 
 export interface Camera {
@@ -69,6 +102,7 @@ export type AdminPage =
   | "incident-management"
   | "student-management"
   | "camera-management"
+  | "parent-management"
   | "reports"
   | "settings";
 

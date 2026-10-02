@@ -19,3 +19,7 @@ logs/
 # beside it.
 /.plugins/
 /.opencode-skills/
+
+ai_module/venv/
+.venv/
+node_modules/

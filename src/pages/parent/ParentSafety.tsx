@@ -4,11 +4,11 @@ import RippleButton from "../../components/RippleButton";
 export default function ParentSafety({ user }: { user: any }) {
   const child = user?.linkedStudent || {};
   const config = {
-    Safe: { bg: "bg-green-50", border: "border-green-200", text: "text-green-700", icon: "🛡️", title: "Child is Safe" },
-    Alert: { bg: "bg-red-50", border: "border-red-200", text: "text-red-700", icon: "🚨", title: "Alert — Child at Risk" },
-    "Incident Under Review": { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-700", icon: "⚠️", title: "Incident Under Review" },
+    Safe: { bg: "bg-green-900/20", border: "border-green-700/50", text: "text-green-400", icon: "🛡️", title: "Child is Safe" },
+    Alert: { bg: "bg-red-900/20", border: "border-red-700/50", text: "text-red-400", icon: "🚨", title: "Alert — Child at Risk" },
+    "Incident Under Review": { bg: "bg-amber-900/20", border: "border-amber-700/50", text: "text-amber-400", icon: "⚠️", title: "Incident Under Review" },
   };
-  const c = config[child.safetyStatus] || config.Safe;
+  const c = config[child.safetyStatus as keyof typeof config] || config.Safe;
 
   return (
     <div className="p-6 max-w-2xl space-y-5 animate-fade-in">
@@ -31,15 +31,15 @@ export default function ParentSafety({ user }: { user: any }) {
             ["Department", child.department],
             ["Semester", child.semester],
           ].map(([k, v]) => (
-            <div key={k} className="bg-white/60 rounded-lg p-3">
-              <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">{k}</p>
-              <p className="text-sm font-semibold text-gray-800">{v}</p>
+            <div key={k} className="bg-slate-900/50 rounded-lg p-3">
+              <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-1">{k}</p>
+              <p className="text-sm font-semibold text-white">{v}</p>
             </div>
           ))}
         </div>
 
         {child.safetyStatus !== "Safe" && (
-          <div className="mt-4 p-3 bg-white/50 rounded-lg">
+          <div className="mt-4 p-3 bg-slate-900/50 rounded-lg">
             <p className={`text-sm font-medium ${c.text}`}>
               {child.safetyStatus === "Alert"
                 ? "🚨 An active incident has been confirmed involving your child. Please contact the university safety office immediately."
@@ -50,10 +50,10 @@ export default function ParentSafety({ user }: { user: any }) {
       </div>
 
       {/* Timeline */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <h3 className="text-sm font-semibold text-gray-900 mb-4" style={{ fontFamily: "'DM Sans', sans-serif" }}>Safety Timeline</h3>
+      <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl shadow-sm border border-slate-700/50 p-5">
+        <h3 className="text-sm font-semibold text-white mb-4" style={{ fontFamily: "'DM Sans', sans-serif" }}>Safety Timeline</h3>
         <div className="relative">
-          <div className="absolute left-4 top-0 bottom-0 w-px bg-gray-200" />
+          <div className="absolute left-4 top-0 bottom-0 w-px bg-slate-700" />
           <div className="space-y-4 pl-10">
             {[
               { time: "Dec 13, 02:20 PM", label: "Incident Confirmed", type: "danger" },
@@ -62,23 +62,23 @@ export default function ParentSafety({ user }: { user: any }) {
               { time: "Dec 13, 09:00 AM", label: "Child checked in to campus", type: "success" },
             ].map((e, i) => (
               <div key={i} className="relative">
-                <div className={`absolute -left-10 top-1 w-3 h-3 rounded-full ${e.type === "danger" ? "bg-red-500" : e.type === "warning" ? "bg-amber-400" : e.type === "success" ? "bg-green-500" : "bg-blue-400"}`} />
-                <p className="text-xs text-gray-400">{e.time}</p>
-                <p className="text-sm font-medium text-gray-800 mt-0.5">{e.label}</p>
+                <div className={`absolute -left-10 top-1 w-3 h-3 rounded-full ring-2 ring-slate-800 ${e.type === "danger" ? "bg-red-500" : e.type === "warning" ? "bg-amber-400" : e.type === "success" ? "bg-green-500" : "bg-blue-400"}`} />
+                <p className="text-xs text-slate-400">{e.time}</p>
+                <p className="text-sm font-medium text-white mt-0.5">{e.label}</p>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <h3 className="text-sm font-semibold text-gray-900 mb-3" style={{ fontFamily: "'DM Sans', sans-serif" }}>Campus Safety Contact</h3>
+      <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl shadow-sm border border-slate-700/50 p-5">
+        <h3 className="text-sm font-semibold text-white mb-3" style={{ fontFamily: "'DM Sans', sans-serif" }}>Campus Safety Contact</h3>
         <div className="space-y-2">
-          <div className="flex items-center gap-3 p-3 bg-red-50 rounded-lg">
+          <div className="flex items-center gap-3 p-3 bg-red-900/20 border border-red-700/50 rounded-lg">
             <span>📞</span>
             <div>
-              <p className="text-xs text-red-700 font-semibold">Emergency Hotline (24/7)</p>
-              <p className="text-sm font-bold text-red-800">+92-51-9085000</p>
+              <p className="text-xs text-red-400 font-semibold">Emergency Hotline (24/7)</p>
+              <p className="text-sm font-bold text-red-300">03173509636</p>
             </div>
           </div>
         </div>

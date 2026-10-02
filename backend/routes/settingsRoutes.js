@@ -21,11 +21,11 @@ router.put('/', async (req, res) => {
     let settings = await Settings.findOne();
     if (!settings) {
       settings = new Settings(req.body);
+      await settings.save();
     } else {
-      Object.assign(settings, req.body);
+      settings = await Settings.findOneAndUpdate({}, req.body, { new: true, runValidators: true });
     }
-    const updatedSettings = await settings.save();
-    res.json(updatedSettings);
+    res.json(settings);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }

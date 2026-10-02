@@ -135,4 +135,50 @@ router.post('/parent/login', async (req, res) => {
   }
 });
 
+// ADMIN RESET PASSWORD (Simulated)
+router.post('/admin/reset-password', (req, res) => {
+  const { adminId, newPassword } = req.body;
+  if (adminId === process.env.ADMIN_ID) {
+    // In a real scenario, this would update the .env file or database.
+    // For now, we simulate a successful reset.
+    res.json({ message: "Admin password reset successfully." });
+  } else {
+    res.status(404).json({ message: "Admin ID not found." });
+  }
+});
+
+// STUDENT RESET PASSWORD
+router.post('/student/reset-password', async (req, res) => {
+  try {
+    const { registrationNumber, newPassword } = req.body;
+    const student = await Student.findOne({ id: registrationNumber });
+    if (student) {
+      student.password = newPassword;
+      await student.save();
+      res.json({ message: "Student password reset successfully." });
+    } else {
+      res.status(404).json({ message: "Student not found." });
+    }
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// PARENT RESET PASSWORD
+router.post('/parent/reset-password', async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
+    const parent = await Parent.findOne({ email });
+    if (parent) {
+      parent.password = newPassword;
+      await parent.save();
+      res.json({ message: "Parent password reset successfully." });
+    } else {
+      res.status(404).json({ message: "Parent not found." });
+    }
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 module.exports = router;
