@@ -120,7 +120,7 @@ export default function AdminDashboard({ onNavigate }: { onNavigate: (p: string)
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-slate-800/90 border-b border-slate-700/50">
-                {["Incident ID", "Type", "Student / Victim", "Suspected Person", "AI Confidence", "Status", "Action"].map((h) => (
+                {["Incident ID", "Type", "Student / Recognized", "Suspected Person", "Status", "Action"].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide whitespace-nowrap">
                     {h}
                   </th>
@@ -140,12 +140,8 @@ export default function AdminDashboard({ onNavigate }: { onNavigate: (p: string)
                     <td className="px-4 py-3 mono text-xs text-blue-400 font-medium whitespace-nowrap">{inc.id}</td>
                     <td className="px-4 py-3 text-xs text-slate-300 whitespace-nowrap">{inc.type}</td>
                     <td className="px-4 py-3 text-xs font-medium text-white whitespace-nowrap">{typeof inc.victim === 'object' ? inc.victim.name : inc.victim}</td>
-                    <td className="px-4 py-3 text-xs text-slate-400 whitespace-nowrap">{typeof inc.harasser === 'object' ? inc.harasser.name : (inc.suspectedPerson || '-')}</td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span className={`mono text-xs font-semibold ${confColor(inc.aiConfidence)}`}>
-                        {inc.aiConfidence}%
-                      </span>
-                    </td>
+                    <td className="px-4 py-3 text-xs text-slate-400 whitespace-nowrap">{inc.type === 'Hand-Raising Detected' ? '-' : (typeof inc.harasser === 'object' ? inc.harasser.name : (inc.suspectedPerson || '-'))}</td>
+
                     <td className="px-4 py-3 whitespace-nowrap">
                       <StatusBadge status={inc.status} size="sm" />
                     </td>
@@ -189,7 +185,7 @@ function IncidentDetail({ inc, onStatusUpdate }: { inc: Incident, onStatusUpdate
         </div>
 
         <div className="bg-slate-900/50 rounded-lg p-3">
-          <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wide mb-1">Victim</p>
+          <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wide mb-1">{inc.type === 'Hand-Raising Detected' ? 'Recognized Person' : 'Victim'}</p>
           <div className="flex flex-col gap-1">
              {typeof inc.victim === 'object' && inc.victim.profilePicture && (
                <img src={inc.victim.profilePicture} alt="Victim" className="w-12 h-12 rounded-full object-cover" />
@@ -202,19 +198,21 @@ function IncidentDetail({ inc, onStatusUpdate }: { inc: Incident, onStatusUpdate
           </div>
         </div>
 
-        <div className="col-span-2 bg-slate-900/50 rounded-lg p-3 border border-red-500/30">
-          <p className="text-[11px] text-red-400 font-medium uppercase tracking-wide mb-1">Harasser / Suspect</p>
-          <div className="flex items-center gap-3">
-             {typeof inc.harasser === 'object' && inc.harasser.profilePicture && (
-               <img src={inc.harasser.profilePicture} alt="Harasser" className="w-12 h-12 rounded-full object-cover" />
-             )}
-             <div>
-                <p className="text-sm text-white font-bold">{typeof inc.harasser === 'object' ? inc.harasser.name : (inc.suspectedPerson || 'Unknown')}</p>
-                <p className="text-xs text-slate-400">{typeof inc.harasser === 'object' ? inc.harasser.department : ''}</p>
-                <p className="text-xs text-slate-400">{typeof inc.harasser === 'object' ? inc.harasser.rollNumber : ''}</p>
-             </div>
+        {inc.type !== 'Hand-Raising Detected' && (
+          <div className="col-span-2 bg-slate-900/50 rounded-lg p-3 border border-red-500/30">
+            <p className="text-[11px] text-red-400 font-medium uppercase tracking-wide mb-1">Harasser / Suspect</p>
+            <div className="flex items-center gap-3">
+               {typeof inc.harasser === 'object' && inc.harasser.profilePicture && (
+                 <img src={inc.harasser.profilePicture} alt="Harasser" className="w-12 h-12 rounded-full object-cover" />
+               )}
+               <div>
+                  <p className="text-sm text-white font-bold">{typeof inc.harasser === 'object' ? inc.harasser.name : (inc.suspectedPerson || 'Unknown')}</p>
+                  <p className="text-xs text-slate-400">{typeof inc.harasser === 'object' ? inc.harasser.department : ''}</p>
+                  <p className="text-xs text-slate-400">{typeof inc.harasser === 'object' ? inc.harasser.rollNumber : ''}</p>
+               </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <div className="flex items-center gap-3">

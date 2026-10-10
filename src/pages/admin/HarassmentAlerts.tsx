@@ -83,13 +83,15 @@ export default function HarassmentAlerts() {
                     </h3>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-1 text-xs text-slate-300">
-                      <div><span className="text-slate-500">{inc.status === 'Confirmed' ? 'Victim' : 'Potential Target'}:</span> <span className="font-medium text-white">{typeof inc.victim === 'object' ? inc.victim.name : inc.victim}</span></div>
+                      <div><span className="text-slate-500">{inc.type === 'Hand-Raising Detected' ? 'Recognized Person' : (inc.status === 'Confirmed' ? 'Victim' : 'Potential Target')}:</span> <span className="font-medium text-white">{typeof inc.victim === 'object' ? inc.victim.name : inc.victim}</span></div>
                       <div><span className="text-slate-500">Dept:</span> {typeof inc.victim === 'object' ? inc.victim.department : inc.victimDept}</div>
                       <div><span className="text-slate-500">Date:</span> {inc.date}</div>
                       <div><span className="text-slate-500">Time:</span> {inc.time}</div>
                       <div><span className="text-slate-500">Location:</span> {inc.location}</div>
                       <div><span className="text-slate-500">Camera:</span> <span className="mono">{inc.cameraId}</span></div>
-                      <div className="col-span-2"><span className="text-slate-500">{inc.status === 'Confirmed' ? 'Harasser / Suspect' : 'Potential Aggressor'}:</span> {typeof inc.harasser === 'object' ? inc.harasser.name : (inc.suspectedPerson || 'Unknown')}</div>
+                      {inc.type !== 'Hand-Raising Detected' && (
+                        <div className="col-span-2"><span className="text-slate-500">{inc.status === 'Confirmed' ? 'Harasser / Suspect' : 'Potential Aggressor'}:</span> {typeof inc.harasser === 'object' ? inc.harasser.name : (inc.suspectedPerson || 'Unknown')}</div>
+                      )}
                       {inc.duration && <div className="col-span-2 text-amber-400">Duration: {inc.duration}s</div>}
                     </div>
                   </div>
@@ -98,9 +100,6 @@ export default function HarassmentAlerts() {
                     <RippleButton variant="primary" size="sm" onClick={() => setSelected(inc)}>
                       View Details
                     </RippleButton>
-                    {(inc.status === "New" || inc.status === "Pending Review") && (
-                      <RippleButton variant="outline" size="sm" onClick={() => { setSelected(inc); updateStatus("Under Review"); }}>Mark Review</RippleButton>
-                    )}
                   </div>
                 </div>
               </div>
@@ -132,32 +131,58 @@ export default function HarassmentAlerts() {
               </div>
               
               <div className="bg-slate-900/50 rounded-lg p-3">
-                <p className="text-[10px] text-slate-500 uppercase tracking-wide font-medium mb-1">{selected.status === 'Confirmed' ? 'Victim' : 'Potential Target'}</p>
-                <div className="flex items-center gap-2">
-                   {typeof selected.victim === 'object' && selected.victim.profilePicture && (
-                     <img src={selected.victim.profilePicture} alt="Victim" className="w-10 h-10 rounded-full object-cover" />
-                   )}
-                   <div>
-                      <p className="text-sm text-white font-bold">{typeof selected.victim === 'object' ? selected.victim.name : selected.victim}</p>
-                      <p className="text-xs text-slate-400">{typeof selected.victim === 'object' ? selected.victim.department : selected.victimDept}</p>
-                      <p className="text-xs text-slate-400">{typeof selected.victim === 'object' ? selected.victim.rollNumber : ''}</p>
-                   </div>
-                </div>
+                <p className="text-[10px] text-slate-500 uppercase tracking-wide font-medium mb-1">{selected.type === 'Hand-Raising Detected' ? 'Recognized Person' : (selected.status === 'Confirmed' ? 'Victim' : 'Potential Target')}</p>
+                {typeof selected.victim === 'object' && selected.victim.faceRecognitionStatus === 'Unknown' ? (
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-500 font-bold">?</div>
+                    <div>
+                      <p className="text-sm text-red-400 font-bold">UNKNOWN / UNVERIFIED</p>
+                      <p className="text-xs text-slate-500">Face not clearly visible or unverified</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                       {typeof selected.victim === 'object' && selected.victim.profilePicture && (
+                         <img src={selected.victim.profilePicture} alt="Victim" className="w-10 h-10 rounded-full object-cover" />
+                       )}
+                       <div>
+                          <p className="text-sm text-white font-bold">{typeof selected.victim === 'object' ? selected.victim.name : selected.victim}</p>
+                          <p className="text-xs text-slate-400">{typeof selected.victim === 'object' ? selected.victim.department : selected.victimDept}</p>
+                          <p className="text-xs text-slate-400">{typeof selected.victim === 'object' ? selected.victim.rollNumber : ''}</p>
+                       </div>
+                    </div>
+                    {typeof selected.victim === 'object' && selected.victim.parentName && (
+                      <div className="mt-1 pt-2 border-t border-slate-700/50">
+                        <p className="text-xs text-slate-400">Parent: <span className="text-white">{selected.victim.parentName}</span> ({selected.victim.parentPhone})</p>
+                      </div>
+                    )}
+                    {typeof selected.victim === 'object' && typeof selected.victim.faceDistance === 'number' && selected.victim.faceDistance > 0 && (
+                      <div className="mt-1">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                          Facenet Distance: {selected.victim.faceDistance.toFixed(2)} (Thresh: {selected.victim.faceThreshold?.toFixed(2)})
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
-              <div className="col-span-2 bg-slate-900/50 rounded-lg p-3 border border-red-500/30">
-                <p className="text-[10px] text-red-400 uppercase tracking-wide font-medium mb-1">{selected.status === 'Confirmed' ? 'Harasser / Suspect' : 'Potential Aggressor'}</p>
-                <div className="flex items-center gap-2">
-                   {typeof selected.harasser === 'object' && selected.harasser.profilePicture && (
-                     <img src={selected.harasser.profilePicture} alt="Harasser" className="w-10 h-10 rounded-full object-cover" />
-                   )}
-                   <div>
-                      <p className="text-sm text-white font-bold">{typeof selected.harasser === 'object' ? selected.harasser.name : (selected.suspectedPerson || 'Unknown')}</p>
-                      <p className="text-xs text-slate-400">{typeof selected.harasser === 'object' ? selected.harasser.department : ''}</p>
-                      <p className="text-xs text-slate-400">{typeof selected.harasser === 'object' ? selected.harasser.rollNumber : ''}</p>
-                   </div>
+              {selected.type !== 'Hand-Raising Detected' && (
+                <div className="col-span-2 bg-slate-900/50 rounded-lg p-3 border border-red-500/30">
+                  <p className="text-[10px] text-red-400 uppercase tracking-wide font-medium mb-1">{selected.status === 'Confirmed' ? 'Harasser / Suspect' : 'Potential Aggressor'}</p>
+                  <div className="flex items-center gap-2">
+                     {typeof selected.harasser === 'object' && selected.harasser.profilePicture && (
+                       <img src={selected.harasser.profilePicture} alt="Harasser" className="w-10 h-10 rounded-full object-cover" />
+                     )}
+                     <div>
+                        <p className="text-sm text-white font-bold">{typeof selected.harasser === 'object' ? selected.harasser.name : (selected.suspectedPerson || 'Unknown')}</p>
+                        <p className="text-xs text-slate-400">{typeof selected.harasser === 'object' ? selected.harasser.department : ''}</p>
+                        <p className="text-xs text-slate-400">{typeof selected.harasser === 'object' ? selected.harasser.rollNumber : ''}</p>
+                     </div>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             <div className="flex gap-3">

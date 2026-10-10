@@ -39,6 +39,7 @@ const LogoutIcon = () => (
 export default function Topbar({ role, userName, notifications, onLogout, pageTitle, userPhoto }: Props) {
   const addRipple = useRipple(false);
   const [showNotifs, setShowNotifs] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const unread = notifications.filter((n) => !n.read).length;
 
   const typeIcon = (type: string) => {
@@ -101,33 +102,45 @@ export default function Topbar({ role, userName, notifications, onLogout, pageTi
           )}
         </div>
 
-        {/* User pill */}
-        <div className="flex items-center gap-2.5 pl-3 border-l border-slate-700/50">
-          <div className="text-right">
-            <p className="text-sm font-semibold text-white leading-tight">{userName}</p>
-            <p className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full inline-block mt-0.5 ${roleBadgeColors[role]}`}>
-              {RoleLabels[role]}
-            </p>
-          </div>
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm overflow-hidden shrink-0 ring-2 ring-slate-800">
+        {/* User profile dropdown */}
+        <div className="relative flex items-center pl-3 border-l border-slate-700/50">
+          <button
+            onClick={() => setShowProfileMenu((v) => !v)}
+            className="ripple-wrapper w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm overflow-hidden shrink-0 ring-2 ring-slate-800 hover:ring-indigo-500 transition-all focus:outline-none"
+            onMouseDown={addRipple}
+          >
             {userPhoto ? (
               <img src={userPhoto} alt={userName} className="w-full h-full object-cover" />
             ) : (
               userName.charAt(0)
             )}
-          </div>
-          <button
-            onClick={onLogout}
-            className="ripple-wrapper ml-1 w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
-            onMouseDown={addRipple}
-            title="Logout"
-          >
-            <LogoutIcon />
           </button>
+
+          {showProfileMenu && (
+            <div className="absolute right-0 top-12 w-48 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 z-50 animate-fade-in overflow-hidden">
+              <div className="px-4 py-3 border-b border-slate-700/50">
+                <p className="text-sm font-semibold text-white truncate">{userName}</p>
+                <p className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full inline-block mt-1 ${roleBadgeColors[role]}`}>
+                  {RoleLabels[role]}
+                </p>
+              </div>
+              <div className="p-1.5">
+                <button
+                  onClick={() => { setShowProfileMenu(false); onLogout(); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors text-left"
+                >
+                  <LogoutIcon />
+                  Logout
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {showNotifs && <div className="fixed inset-0 z-40" onClick={() => setShowNotifs(false)} />}
+      {(showNotifs || showProfileMenu) && (
+        <div className="fixed inset-0 z-40" onClick={() => { setShowNotifs(false); setShowProfileMenu(false); }} />
+      )}
     </header>
   );
 }

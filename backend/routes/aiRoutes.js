@@ -28,9 +28,10 @@ router.post('/start', (req, res) => {
   starting = true;
 
   const aiDir = path.join(__dirname, '..', '..', 'ai_module');
+  const pythonExecutable = path.join(aiDir, 'venv', 'Scripts', 'python.exe');
   
   // Use python for Windows, with UTF-8 encoding so emojis in logs don't crash the script
-  aiProcess = spawn('python', ['main_ai.py'], { 
+  aiProcess = spawn(pythonExecutable, ['main_ai.py'], { 
     cwd: aiDir,
     env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
   });

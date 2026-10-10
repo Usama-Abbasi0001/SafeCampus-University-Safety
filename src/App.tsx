@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
-import { Role, AdminPage, StudentPage, ParentPage, Notification } from "./types";
-type AnyPage = AdminPage | StudentPage | ParentPage;
+import { AdminPage, Notification } from "./types";
+type AnyPage = AdminPage;
 
 
 import Sidebar from "./components/Sidebar";
@@ -13,28 +13,28 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import LiveMonitoring from "./pages/admin/LiveMonitoring";
 import HarassmentAlerts from "./pages/admin/HarassmentAlerts";
 import IncidentManagement from "./pages/admin/IncidentManagement";
-import StudentManagement from "./pages/admin/StudentManagement";
-import ParentManagement from "./pages/admin/ParentManagement";
+// import StudentManagement from "./pages/admin/StudentManagement";
+// import ParentManagement from "./pages/admin/ParentManagement";
 import CameraManagement from "./pages/admin/CameraManagement";
 import Reports from "./pages/admin/Reports";
 import AdminSettings from "./pages/admin/AdminSettings";
 
-// Student pages
-import StudentDashboard from "./pages/student/StudentDashboard";
-import StudentProfile from "./pages/student/StudentProfile";
-import MySafety from "./pages/student/MySafety";
-import IncidentHistory from "./pages/student/IncidentHistory";
-import StudentNotifications from "./pages/student/StudentNotifications";
+// Student pages (COMMENTED OUT)
+// import StudentDashboard from "./pages/student/StudentDashboard";
+// import StudentProfile from "./pages/student/StudentProfile";
+// import MySafety from "./pages/student/MySafety";
+// import IncidentHistory from "./pages/student/IncidentHistory";
+// import StudentNotifications from "./pages/student/StudentNotifications";
 
-// Parent pages
-import ParentDashboard from "./pages/parent/ParentDashboard";
-import ChildProfile from "./pages/parent/ChildProfile";
-import ParentSafety from "./pages/parent/ParentSafety";
-import ParentIncidents from "./pages/parent/ParentIncidents";
-import ParentNotifications from "./pages/parent/ParentNotifications";
+// Parent pages (COMMENTED OUT)
+// import ParentDashboard from "./pages/parent/ParentDashboard";
+// import ChildProfile from "./pages/parent/ChildProfile";
+// import ParentSafety from "./pages/parent/ParentSafety";
+// import ParentIncidents from "./pages/parent/ParentIncidents";
+// import ParentNotifications from "./pages/parent/ParentNotifications";
 
-// --- Login screen ---
-import AuthFlow from "./components/auth/AuthFlow";
+// --- Login screen (COMMENTED OUT) ---
+// import AuthFlow from "./components/auth/AuthFlow";
 
 
 
@@ -44,13 +44,14 @@ const adminTitles: Record<AdminPage, string> = {
   "live-monitoring": "Live Camera Monitoring",
   "harassment-alerts": "Harassment Alerts",
   "incident-management": "Incident Management",
-  "student-management": "Student Management",
-  "parent-management": "Parent Management",
+  // "student-management": "Student Management",
+  // "parent-management": "Parent Management",
   "camera-management": "Camera Management",
   reports: "Analytics & Reports",
   settings: "System Settings",
 };
 
+/*
 const studentTitles: Record<StudentPage, string> = {
   dashboard: "Student Dashboard",
   profile: "My Profile",
@@ -66,21 +67,14 @@ const parentTitles: Record<ParentPage, string> = {
   incidents: "Incidents",
   notifications: "Notifications",
 };
+*/
 
 // --- Main app ---
 export default function App() {
-  const [role, setRole] = useState<Role | null>(() => {
-    const savedRole = localStorage.getItem("authRole");
-    return savedRole ? (savedRole as Role) : null;
-  });
-  const [user, setUser] = useState<any>(() => {
-    const savedUser = localStorage.getItem("authUser");
-    try {
-      return savedUser ? JSON.parse(savedUser) : null;
-    } catch {
-      return null;
-    }
-  });
+  // Bypass login completely - Force Admin
+  const [role, setRole] = useState<string>("admin");
+  const [user, setUser] = useState<any>({ name: "Admin", role: "admin" });
+
   
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
@@ -109,27 +103,26 @@ export default function App() {
     }
   }, [role]);
 
+  /*
   const handleLogin = (r: Role, u: any) => {
     setRole(r);
     setUser(u);
     localStorage.setItem("authRole", r);
     localStorage.setItem("authUser", JSON.stringify(u));
   };
+  */
 
   const handleLogout = () => {
-    setRole(null);
-    setUser(null);
-    localStorage.removeItem("authRole");
-    localStorage.removeItem("authUser");
+    // Disabled
   };
 
   const [adminPage, setAdminPage] = useState<AdminPage>("dashboard");
-  const [studentPage, setStudentPage] = useState<StudentPage>("dashboard");
-  const [parentPage, setParentPage] = useState<ParentPage>("dashboard");
+  // const [studentPage, setStudentPage] = useState<StudentPage>("dashboard");
+  // const [parentPage, setParentPage] = useState<ParentPage>("dashboard");
 
-  if (!role || !user) {
-    return <AuthFlow onLogin={handleLogin} />;
-  }
+  // if (!role || !user) {
+  //   return <AuthFlow onLogin={handleLogin} />;
+  // }
 
   const renderAdminPage = () => {
     switch (adminPage) {
@@ -137,14 +130,15 @@ export default function App() {
       case "live-monitoring":     return <LiveMonitoring />;
       case "harassment-alerts":   return <HarassmentAlerts />;
       case "incident-management": return <IncidentManagement />;
-      case "student-management":  return <StudentManagement />;
-      case "parent-management":   return <ParentManagement />;
+      // case "student-management":  return <StudentManagement />;
+      // case "parent-management":   return <ParentManagement />;
       case "camera-management":   return <CameraManagement />;
       case "reports":             return <Reports />;
       case "settings":            return <AdminSettings />;
     }
   };
 
+  /*
   const renderStudentPage = () => {
     switch (studentPage) {
       case "dashboard":     return <StudentDashboard user={user} onNavigate={(p) => setStudentPage(p as StudentPage)} />;
@@ -164,14 +158,10 @@ export default function App() {
       case "notifications": return <ParentNotifications user={user} />;
     }
   };
+  */
 
-  const currentPage = role === "admin" ? adminPage : role === "student" ? studentPage : parentPage;
-  const pageTitle =
-    role === "admin"
-      ? adminTitles[adminPage]
-      : role === "student"
-      ? studentTitles[studentPage]
-      : parentTitles[parentPage];
+  const currentPage = adminPage;
+  const pageTitle = adminTitles[adminPage];
 
   const userName = user?.name || "User";
   const userPhoto = user?.profilePicture || user?.photo || null;
@@ -179,9 +169,7 @@ export default function App() {
   const notifications: Notification[] = [];
 
   const handleNavigate = (page: string) => {
-    if (role === "admin") setAdminPage(page as AdminPage);
-    else if (role === "student") setStudentPage(page as StudentPage);
-    else setParentPage(page as ParentPage);
+    setAdminPage(page as AdminPage);
   };
 
   return (
@@ -214,8 +202,8 @@ export default function App() {
         />
         <main className="flex-1 overflow-y-auto">
           {role === "admin" && renderAdminPage()}
-          {role === "student" && renderStudentPage()}
-          {role === "parent" && renderParentPage()}
+          {/* {role === "student" && renderStudentPage()} */}
+          {/* {role === "parent" && renderParentPage()} */}
         </main>
       </div>
     </div>

@@ -37,6 +37,17 @@ router.put('/:id', async (req, res) => {
   }
 });
 
+// DELETE a camera
+router.delete('/:id', async (req, res) => {
+  try {
+    const deleted = await Camera.findOneAndDelete({ id: req.params.id });
+    if (!deleted) return res.status(404).json({ message: "Camera not found" });
+    res.json({ message: "Camera deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // Seed data
 router.post('/seed', async (req, res) => {
   try {

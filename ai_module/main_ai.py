@@ -1,9 +1,5 @@
 import sys
 import io
-# Force stdout to UTF-8 to prevent charmap errors with DeepFace logging on Windows
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', line_buffering=True)
-sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', line_buffering=True)
-
 import cv2
 import threading
 import copy
@@ -12,61 +8,21 @@ import requests
 import os
 import time
 import math
-from deepface import DeepFace
 from datetime import datetime
 from flask import Flask, Response
 from flask_cors import CORS
 from ultralytics import YOLO
 
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', line_buffering=True)
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', line_buffering=True)
+
 app = Flask(__name__)
 CORS(app)
 
 API_URL = "http://localhost:5000/api"
-DB_PATH = "db"
-WATCHING_MIN_DURATION = 10
-WATCHING_CONFIDENCE_THRESHOLD = 0.85
 
-def setup_face_database():
-    """Fetches students from backend and downloads their profile pictures into the db folder for DeepFace."""
-    print("🔄 Fetching student database from server...")
-    if not os.path.exists(DB_PATH):
-        os.makedirs(DB_PATH)
-        
-    # Clear old database images and cache to prevent stale face matching
-    for f in os.listdir(DB_PATH):
-        file_path = os.path.join(DB_PATH, f)
-        if os.path.isfile(file_path):
-            try:
-                os.remove(file_path)
-            except Exception as e:
-                pass
-                
-    try:
-        response = requests.get(f"{API_URL}/students")
-        if response.status_code == 200:
-            students = response.json()
-            downloaded = 0
-            for student in students:
-                photo_url = student.get("photo", "")
-                if photo_url:
-                    if photo_url.startswith("/"):
-                        photo_url = f"http://localhost:5000{photo_url}"
-                    
-                    if photo_url.startswith("http"):
-                        try:
-                            img_data = requests.get(photo_url).content
-                            if len(img_data) > 0:
-                                file_path = os.path.join(DB_PATH, f"{student['id']}.jpg")
-                                with open(file_path, "wb") as handler:
-                                    handler.write(img_data)
-                                downloaded += 1
-                        except Exception as e:
-                            print(f"Failed to download {photo_url}: {e}")
-            print(f"✅ Successfully loaded {downloaded} student faces into database.")
-        else:
-            print("❌ Failed to fetch students from backend.")
-    except Exception as e:
-        print(f"❌ Error setting up face database: {e}")
+def calculate_distance(p1, p2):
+    return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
 
 class CameraProcessor:
     def __init__(self):
@@ -88,8 +44,7 @@ class CameraProcessor:
             self.thread.join()
 
     def _process_loop(self):
-        print("[AI] Starting AI Engine...")
-        setup_face_database()
+        print("[AI] Starting Specific Harassment Detection Engine...")
         
         mp_pose = mp.solutions.pose
         pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
@@ -100,44 +55,20 @@ class CameraProcessor:
             print("❌ YOLO model failed to load:", e)
             yolo_model = None
             
-        print("[CAMERA] Waiting 2 seconds for browser to release hardware lock...")
+        print("[CAMERA] Waiting 2 seconds...")
         time.sleep(2)
         
-        print("[CAMERA] Searching for available cameras...")
         target_idx = int(os.environ.get("CAMERA_INDEX", 0))
-        available_cameras = []
-        
-        for i in range(3):
-            test_cap = cv2.VideoCapture(i)
-            if test_cap.isOpened():
-                ret, _ = test_cap.read()
-                if ret:
-                    print(f"[CAMERA] Index {i}: Available")
-                    available_cameras.append(i)
-                test_cap.release()
-            else:
-                print(f"[CAMERA] Index {i}: Unavailable")
-                
-        if target_idx not in available_cameras:
-            if len(available_cameras) > 0:
-                target_idx = available_cameras[-1]
-            else:
-                target_idx = 0
-
-        print(f"[CAMERA] Selected camera index: {target_idx}")
         self.cap = cv2.VideoCapture(target_idx)
         
         if not self.cap.isOpened():
-            print("[CAMERA] ERROR: Failed to open camera!")
-            return
+            self.cap = cv2.VideoCapture(0)
             
-        print("[CAMERA] Camera opened successfully")
-        print(f"[CAMERA] Resolution: {int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))}x{int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))}")
-        print(f"[CAMERA] FPS: {int(self.cap.get(cv2.CAP_PROP_FPS))}")
-        print("✅ AI Engine & Streaming started. Live on Dashboard!")
+        print("✅ AI Engine Started.")
         
         incident_cooldown = 0
-        watching_start_time = None
+        action_timers = {}
+        frame_count = 0
         
         while self.running and self.cap.isOpened():
             ret, frame = self.cap.read()
@@ -145,166 +76,176 @@ class CameraProcessor:
                 time.sleep(0.01)
                 continue
                 
+            frame_count += 1
+            
+            # To reduce lag, only process AI on every 3rd frame
+            if frame_count % 3 != 0:
+                with self.lock:
+                    # Still show the video feed smoothly without AI overlays for skipped frames
+                    # Or keep the last display_frame. We'll keep the last display_frame if it exists
+                    if getattr(self, 'last_display', None) is not None:
+                        self.frame = self.last_display.copy()
+                    else:
+                        self.frame = frame.copy()
+                continue
+                
+            # Resize frame slightly to speed up AI processing
+            frame = cv2.resize(frame, (640, 480))
             display_frame = frame.copy()
-            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            people_poses = []
             
-            # Physical Harassment Detection via MediaPipe
-            results_pose = pose.process(rgb_frame)
-            fight_detected = False
-            
-            # Watching Detection via YOLO tracking
-            watching_detected = False
-            duration = 0
-            watcher_idx = None # Track ID of the watcher
-            target_idx = None # Track ID of the target
-            
-            num_people = 0
-            boxes = None
             if yolo_model:
                 results_yolo = yolo_model.track(frame, persist=True, classes=0, verbose=False)
                 if len(results_yolo) > 0 and results_yolo[0].boxes is not None and results_yolo[0].boxes.id is not None:
                     boxes = results_yolo[0].boxes
-                    num_people = len(boxes.id)
                     
-                    if num_people == 2:
-                        if watching_start_time is None:
-                            watching_start_time = time.time()
+                    for i in range(len(boxes.id)):
+                        track_id = int(boxes.id[i])
+                        x1, y1, x2, y2 = map(int, boxes.xyxy[i])
                         
-                        duration = time.time() - watching_start_time
-                        cv2.putText(display_frame, f"Tracking: {int(duration)}s", (10, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
+                        pad = 10
+                        h, w, _ = frame.shape
+                        y1_p, y2_p = max(0, y1 - pad), min(h, y2 + pad)
+                        x1_p, x2_p = max(0, x1 - pad), min(w, x2 + pad)
                         
-                        if duration >= WATCHING_MIN_DURATION:
-                            watching_detected = True
-                            # Assign tentative roles (e.g., box 0 is watcher, box 1 is target)
-                            # A real gaze model would determine this accurately.
-                            watcher_idx = int(boxes.id[0])
-                            target_idx = int(boxes.id[1])
-                    else:
-                        watching_start_time = None
-                else:
-                    watching_start_time = None
+                        crop_img = frame[y1_p:y2_p, x1_p:x2_p]
+                        if crop_img.shape[0] < 20 or crop_img.shape[1] < 20: continue
+                        
+                        crop_rgb = cv2.cvtColor(crop_img, cv2.COLOR_BGR2RGB)
+                        res = pose.process(crop_rgb)
+                        
+                        if res.pose_landmarks:
+                            landmarks = res.pose_landmarks.landmark
+                            
+                            def get_global_pt(lm):
+                                if lm.visibility < 0.5: return None
+                                return (int(lm.x * crop_img.shape[1]) + x1_p, int(lm.y * crop_img.shape[0]) + y1_p)
+                                
+                            person_data = {
+                                "id": track_id,
+                                "bbox": (x1, y1, x2, y2),
+                                "nose": get_global_pt(landmarks[mp_pose.PoseLandmark.NOSE.value]),
+                                "l_shoulder": get_global_pt(landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value]),
+                                "r_shoulder": get_global_pt(landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value]),
+                                "l_wrist": get_global_pt(landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value]),
+                                "r_wrist": get_global_pt(landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value]),
+                                "l_hip": get_global_pt(landmarks[mp_pose.PoseLandmark.LEFT_HIP.value]),
+                                "r_hip": get_global_pt(landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value]),
+                            }
+                            
+                            if person_data["l_shoulder"] and person_data["r_shoulder"]:
+                                person_data["chest"] = (
+                                    (person_data["l_shoulder"][0] + person_data["r_shoulder"][0]) // 2,
+                                    (person_data["l_shoulder"][1] + person_data["r_shoulder"][1]) // 2
+                                )
+                                person_data["scale"] = calculate_distance(person_data["l_shoulder"], person_data["r_shoulder"])
+                            else:
+                                person_data["chest"] = None
+                                person_data["scale"] = 50
+                                
+                            if person_data["l_hip"] and person_data["r_hip"]:
+                                person_data["hips"] = (
+                                    (person_data["l_hip"][0] + person_data["r_hip"][0]) // 2,
+                                    (person_data["l_hip"][1] + person_data["r_hip"][1]) // 2
+                                )
+                            else:
+                                person_data["hips"] = None
+                                
+                            people_poses.append(person_data)
+                            cv2.rectangle(display_frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                            cv2.putText(display_frame, f"ID: {track_id}", (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
 
-            # Only consider fight_detected if there are at least 2 people (Removes single-person false positive)
-            if results_pose.pose_landmarks and num_people >= 2:
-                landmarks = results_pose.pose_landmarks.landmark
-                left_wrist = landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value]
-                right_wrist = landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value]
-                left_shoulder = landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value]
-                right_shoulder = landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value]
-                
-                if left_wrist.y < left_shoulder.y or right_wrist.y < right_shoulder.y:
-                    fight_detected = True
+            cv2.putText(display_frame, "Harassment Detection Active", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
 
-            cv2.putText(display_frame, "SafeCampus Live AI Monitoring", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            detected_event = None
             
-            # Trigger Incident
-            if (fight_detected or watching_detected) and (time.time() - incident_cooldown > 15):
-                incident_type = "Physical Aggression" if fight_detected else "Suspicious Observation"
-                status_label = "Pending Review"
-                alert_msg = f"{incident_type.upper()}!"
-                cv2.putText(display_frame, alert_msg, (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
-                print(f"\n🚨 AUTOMATIC INCIDENT DETECTED: {alert_msg}")
-                
-                victim_id = "Unknown"
-                harasser_id = "Unknown"
-                
-                # Correct identity detection by cropping bounding boxes
-                detected_identities = {}
-                used_student_ids = set()
-                try:
-                    if boxes is not None:
-                        matches = []
-                        for i in range(len(boxes.id)):
-                            track_id = int(boxes.id[i])
-                            x1, y1, x2, y2 = map(int, boxes.xyxy[i])
-                            
-                            # Expand bounding box slightly for face detection
-                            pad = 20
-                            y1_pad = max(0, y1 - pad)
-                            y2_pad = min(frame.shape[0], y2 + pad)
-                            x1_pad = max(0, x1 - pad)
-                            x2_pad = min(frame.shape[1], x2 + pad)
-                            
-                            crop_img = frame[y1_pad:y2_pad, x1_pad:x2_pad]
-                            if crop_img.shape[0] > 30 and crop_img.shape[1] > 30:
-                                dfs = DeepFace.find(img_path=crop_img, db_path=DB_PATH, enforce_detection=False, silent=True)
-                                if len(dfs) > 0 and len(dfs[0]) > 0:
-                                    distance = dfs[0].iloc[0]['distance']
-                                    threshold = dfs[0].iloc[0]['threshold']
-                                    # Relax threshold slightly back to 0.9, but prevent duplicate mapping
-                                    if distance <= threshold * 0.9:
-                                        matched_file = dfs[0].iloc[0]['identity']
-                                        student_id = os.path.basename(matched_file).split('.')[0]
-                                        matches.append({
-                                            'track_id': track_id,
-                                            'student_id': student_id,
-                                            'distance': distance
-                                        })
+            for i in range(len(people_poses)):
+                for j in range(i + 1, len(people_poses)):
+                    pA = people_poses[i]
+                    pB = people_poses[j]
+                    
+                    pair_id = tuple(sorted([pA["id"], pB["id"]]))
+                    scale = (pA["scale"] + pB["scale"]) / 2.0
+                    
+                    is_kissing = False
+                    is_touching_chest = False
+                    is_touching_hips = False
+                    
+                    if pA["nose"] and pB["nose"]:
+                        dist = calculate_distance(pA["nose"], pB["nose"])
+                        if dist < (scale * 0.6): 
+                            is_kissing = True
+
+                    def check_touch(wrists_A, target_B):
+                        if not target_B: return False
+                        for w in wrists_A:
+                            if w and calculate_distance(w, target_B) < (scale * 0.6):
+                                return True
+                        return False
+                    
+                    wrists_A = [pA["l_wrist"], pA["r_wrist"]]
+                    wrists_B = [pB["l_wrist"], pB["r_wrist"]]
+                    
+                    if check_touch(wrists_A, pB["chest"]) or check_touch(wrists_B, pA["chest"]):
+                        is_touching_chest = True
                         
-                        # Sort by distance (lowest is best) and assign
-                        matches.sort(key=lambda x: x['distance'])
-                        for match in matches:
-                            if match['student_id'] not in used_student_ids:
-                                detected_identities[match['track_id']] = match['student_id']
-                                used_student_ids.add(match['student_id'])
+                    if check_touch(wrists_A, pB["hips"]) or check_touch(wrists_B, pA["hips"]):
+                        is_touching_hips = True
                         
-                        # Assign Unknown to any track_id that didn't get a unique match
-                        for i in range(len(boxes.id)):
-                            track_id = int(boxes.id[i])
-                            if track_id not in detected_identities:
-                                detected_identities[track_id] = "Unknown"
-                except Exception as e:
-                    print(f"Face recognition error: {e}")
+                    current_event = None
+                    if is_kissing: current_event = "Intimate Contact (Kissing)"
+                    elif is_touching_chest: current_event = "Inappropriate Touch (Chest)"
+                    elif is_touching_hips: current_event = "Inappropriate Touch (Hips/Private)"
+                    
+                    if current_event:
+                        if pair_id not in action_timers:
+                            action_timers[pair_id] = {"type": current_event, "start": time.time()}
+                        elif action_timers[pair_id]["type"] != current_event:
+                            action_timers[pair_id] = {"type": current_event, "start": time.time()}
+                        else:
+                            duration = time.time() - action_timers[pair_id]["start"]
+                            if duration >= 2.0:
+                                detected_event = current_event
+                    else:
+                        if pair_id in action_timers:
+                            del action_timers[pair_id]
 
-                if watching_detected and watcher_idx is not None and target_idx is not None:
-                    harasser_id = detected_identities.get(watcher_idx, "Unknown")
-                    victim_id = detected_identities.get(target_idx, "Unknown")
-                elif fight_detected and num_people >= 2:
-                    # Random assignment for physical aggression if we don't know who is who yet
-                    keys = list(detected_identities.keys())
-                    if len(keys) >= 2:
-                        harasser_id = detected_identities[keys[0]]
-                        victim_id = detected_identities[keys[1]]
-                elif len(detected_identities) > 0:
-                     harasser_id = list(detected_identities.values())[0]
-
-                print(f"👤 Detected Potential Aggressor: {harasser_id}, Potential Target: {victim_id}")
-
+            if detected_event and (time.time() - incident_cooldown > 10):
+                alert_msg = f"ALERT: {detected_event}!"
+                cv2.putText(display_frame, alert_msg, (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+                print(f"\n🚨 {alert_msg}")
+                
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 os.makedirs("incidents", exist_ok=True)
                 image_path = f"incidents/incident_{timestamp}.jpg"
                 
-                # Draw label on saved image
                 save_frame = frame.copy()
-                cv2.putText(save_frame, incident_type.upper(), (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 4)
+                cv2.putText(save_frame, alert_msg, (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
                 cv2.imwrite(image_path, save_frame)
                 
                 data = {
-                    "type": incident_type,
+                    "type": detected_event,
                     "cameraId": "CAM-01",
-                    "location": "Library",
-                    "latitude": 33.6425,
-                    "longitude": 72.9930,
-                    "status": "Pending Review",
-                    "aiConfidence": 98 if fight_detected else int(WATCHING_CONFIDENCE_THRESHOLD * 100),
-                    "victimId": victim_id,
-                    "harasserId": harasser_id,
-                    "duration": round(duration, 1) if watching_detected else 0,
-                    "notes": "Triggered by AI tracking. Roles are tentative and require admin review."
+                    "location": "Corridor/Library",
+                    "status": "New",
+                    "aiConfidence": 92,
+                    "victimId": "VICTIM-001",
+                    "harasserId": "HARASSER-001",
                 }
                 
                 try:
                     with open(image_path, "rb") as img_file:
                         res = requests.post(f"{API_URL}/incidents", data=data, files={"evidenceImage": img_file})
                         if res.status_code == 201:
-                            print("✅ Incident sent to dashboard automatically.")
+                            print("✅ Alert sent to Admin Dashboard.")
                 except Exception as e:
-                    print("❌ Failed to send incident:", e)
+                    print("❌ API Error:", e)
                     
                 incident_cooldown = time.time()
-                watching_start_time = None # Reset after triggering
+                action_timers.clear()
 
             with self.lock:
+                self.last_display = display_frame.copy()
                 self.frame = display_frame.copy()
 
         if self.cap:

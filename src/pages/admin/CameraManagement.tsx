@@ -120,6 +120,25 @@ export default function CameraManagement() {
                         >
                           {cam.status === "Active" ? "Disable" : "Enable"}
                         </button>
+                        <div className="border-t border-slate-700/50 my-1"></div>
+                        <button 
+                          onClick={async () => {
+                            if (window.confirm(`Are you sure you want to delete ${cam.name}?`)) {
+                              try {
+                                const res = await fetch(`/api/cameras/${cam.id}`, { method: "DELETE" });
+                                if (res.ok) {
+                                  setCameraList(cameraList.filter(c => c.id !== cam.id));
+                                }
+                              } catch (err) {
+                                console.error("Failed to delete camera", err);
+                              }
+                            }
+                            setOpenMenuId(null);
+                          }}
+                          className="block w-full text-left px-4 py-2 text-red-400 hover:bg-red-500/10"
+                        >
+                          Delete
+                        </button>
                       </div>
                     )}
                   </td>

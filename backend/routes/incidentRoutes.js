@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Incident = require('../models/Incident');
-const Parent = require('../models/Parent');
+// const Parent = require('../models/Parent');
 const multer = require('multer');
 const nodemailer = require('nodemailer');
 
@@ -49,55 +49,43 @@ router.post('/', upload.single('evidenceImage'), async (req, res) => {
       incidentData.location = camera.location;
     }
 
-    // Lookup student names
-    const Student = require('../models/Student');
+    // Lookup student names (COMMENTED OUT)
+    // const Student = require('../models/Student');
     
     // Victim lookup
-    let victimObj = { faceRecognitionStatus: "Unknown", name: "Unknown Person" };
+    let victimObj = {
+      id: "VICTIM-001",
+      name: "Demo Victim",
+      gender: "Female",
+      status: "Potential Victim"
+    };
+    /*
     if (incidentData.victimId && incidentData.victimId !== "Unknown") {
-      const student = await Student.findOne({ id: incidentData.victimId });
+      const student = await Student.findOne({ id: new RegExp(`^${incidentData.victimId}$`, 'i') });
       if (student) {
-        victimObj = {
-          studentId: student.id,
-          name: student.name,
-          fatherName: student.fatherName,
-          rollNumber: student.rollNumber,
-          department: student.department,
-          semester: student.semester,
-          email: student.email,
-          phone: student.phone,
-          profilePicture: student.photo,
-          faceRecognitionStatus: "Recognized"
-        };
-        // Backwards compat
-        incidentData.victimDept = student.department;
-        incidentData.victimSemester = student.semester;
+        victimObj = { ... };
       }
     }
+    */
     incidentData.victim = victimObj;
 
     // Harasser lookup
-    let harasserObj = { faceRecognitionStatus: "Unknown", name: "Unknown Person" };
+    let harasserObj = {
+      id: "HARASSER-001",
+      name: "Demo Harasser",
+      gender: "Male",
+      status: "Suspected Harasser"
+    };
+    /*
     if (incidentData.harasserId && incidentData.harasserId !== "Unknown") {
-      const student = await Student.findOne({ id: incidentData.harasserId });
+      const student = await Student.findOne({ id: new RegExp(`^${incidentData.harasserId}$`, 'i') });
       if (student) {
-        harasserObj = {
-          studentId: student.id,
-          name: student.name,
-          fatherName: student.fatherName,
-          rollNumber: student.rollNumber,
-          department: student.department,
-          semester: student.semester,
-          email: student.email,
-          phone: student.phone,
-          profilePicture: student.photo,
-          faceRecognitionStatus: "Recognized"
-        };
-        // Backwards compat
-        incidentData.suspectedPerson = student.name;
+        harasserObj = { ... };
       }
     }
+    */
     incidentData.harasser = harasserObj;
+
 
     const incident = new Incident(incidentData);
     const newIncident = await incident.save();
@@ -160,142 +148,25 @@ router.put('/:id', async (req, res) => {
     const originalIncident = await Incident.findOne({ id: req.params.id });
     
     let updateData = { ...req.body };
+    // If victimId changed, re-lookup (COMMENTED OUT)
+    /*
     const Student = require('../models/Student');
-    
-    // If victimId changed, re-lookup
-    if (updateData.victimId && updateData.victimId !== originalIncident.victimId) {
-      if (updateData.victimId !== "Unknown") {
-        const student = await Student.findOne({ id: updateData.victimId });
-        if (student) {
-          updateData.victim = {
-            studentId: student.id,
-            name: student.name,
-            fatherName: student.fatherName,
-            rollNumber: student.rollNumber,
-            department: student.department,
-            semester: student.semester,
-            email: student.email,
-            phone: student.phone,
-            profilePicture: student.photo,
-            faceRecognitionStatus: "Recognized"
-          };
-          updateData.victimDept = student.department;
-          updateData.victimSemester = student.semester;
-        }
-      } else {
-        updateData.victim = { faceRecognitionStatus: "Unknown", name: "Unknown Person" };
-      }
-    }
-    
-    // If harasserId changed, re-lookup
-    if (updateData.harasserId && updateData.harasserId !== originalIncident.harasserId) {
-      if (updateData.harasserId !== "Unknown") {
-        const student = await Student.findOne({ id: updateData.harasserId });
-        if (student) {
-          updateData.harasser = {
-            studentId: student.id,
-            name: student.name,
-            fatherName: student.fatherName,
-            rollNumber: student.rollNumber,
-            department: student.department,
-            semester: student.semester,
-            email: student.email,
-            phone: student.phone,
-            profilePicture: student.photo,
-            faceRecognitionStatus: "Recognized"
-          };
-          updateData.suspectedPerson = student.name;
-        }
-      } else {
-        updateData.harasser = { faceRecognitionStatus: "Unknown", name: "Unknown Person" };
-      }
-    }
+    if (updateData.victimId && updateData.victimId !== originalIncident.victimId) { ... }
+    if (updateData.harasserId && updateData.harasserId !== originalIncident.harasserId) { ... }
+    */
 
     const updated = await Incident.findOneAndUpdate({ id: req.params.id }, updateData, { new: true });
     if (!updated) return res.status(404).json({ message: "Incident not found" });
 
+    // Notification emails to parents (COMMENTED OUT)
+    /*
     if (originalIncident && req.body.status && req.body.status !== originalIncident.status) {
       const victimParent = await Parent.findOne({ childStudentId: updated.victimId || (updated.victim && updated.victim.studentId) });
       const harasserParent = await Parent.findOne({ childStudentId: updated.harasserId || (updated.harasser && updated.harasser.studentId) });
-      
-      const victimName = (updated.victim && updated.victim.name) || updated.victim || 'Unknown';
-      const harasserName = (updated.harasser && updated.harasser.name) || updated.suspectedPerson || 'Unknown';
-
-      if (req.body.status === 'Confirmed') {
-        // Email to Victim's Parent
-        if (victimParent && victimParent.email) {
-          const subject = `URGENT: Harassment Incident Confirmed - ${updated.id}`;
-          const html = `
-            <div style="font-family: sans-serif; padding: 20px;">
-              <h2 style="color: #d32f2f;">🚨 Harassment Incident Confirmed</h2>
-              <p>Dear <strong>${victimParent.name}</strong>,</p>
-              <p>A harassment incident involving your child, <strong>${victimName}</strong>, has been confirmed by the administration.</p>
-              
-              <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                <h4 style="margin-top: 0;">Incident Details:</h4>
-                <ul style="list-style-type: none; padding: 0;">
-                  <li style="margin-bottom: 8px;"><strong>Incident ID:</strong> ${updated.id}</li>
-                  <li style="margin-bottom: 8px;"><strong>Type:</strong> ${updated.type}</li>
-                  <li style="margin-bottom: 8px;"><strong>Suspected Harasser:</strong> <span style="color: red; font-weight: bold;">${harasserName}</span></li>
-                  <li style="margin-bottom: 8px;"><strong>Location:</strong> ${updated.location}</li>
-                  <li style="margin-bottom: 8px;"><strong>Date & Time:</strong> ${updated.date} ${updated.time}</li>
-                </ul>
-              </div>
-              
-              <p>Please log in to the Parent Portal to view further details and contact the university safety office immediately.</p>
-              <br>
-              <p>SafeCampus System</p>
-            </div>
-          `;
-          sendEmail(victimParent.email, subject, html);
-        }
-
-        // Email to Harasser's Parent
-        if (harasserParent && harasserParent.email) {
-          const subject = `URGENT: Disciplinary Alert - Harassment Incident Confirmed - ${updated.id}`;
-          const html = `
-            <div style="font-family: sans-serif; padding: 20px;">
-              <h2 style="color: #d32f2f;">🚨 Disciplinary Alert</h2>
-              <p>Dear <strong>${harasserParent.name}</strong>,</p>
-              <p>We are writing to inform you that your child, <strong>${harasserName}</strong>, has been identified as the harasser in a confirmed incident.</p>
-              
-              <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                <h4 style="margin-top: 0;">Incident Details:</h4>
-                <ul style="list-style-type: none; padding: 0;">
-                  <li style="margin-bottom: 8px;"><strong>Incident ID:</strong> ${updated.id}</li>
-                  <li style="margin-bottom: 8px;"><strong>Type:</strong> ${updated.type}</li>
-                  <li style="margin-bottom: 8px;"><strong>Victim:</strong> ${victimName}</li>
-                  <li style="margin-bottom: 8px;"><strong>Location:</strong> ${updated.location}</li>
-                  <li style="margin-bottom: 8px;"><strong>Date & Time:</strong> ${updated.date} ${updated.time}</li>
-                </ul>
-              </div>
-              
-              <p>Please contact the university administration office immediately regarding this disciplinary matter.</p>
-              <br>
-              <p>SafeCampus System</p>
-            </div>
-          `;
-          sendEmail(harasserParent.email, subject, html);
-        }
-      } else if (req.body.status === 'Resolved') {
-        if (victimParent && victimParent.email) {
-          const subject = `UPDATE: Incident Resolved & Child is Safe - ${updated.id}`;
-          const html = `
-            <div style="font-family: sans-serif; padding: 20px;">
-              <h2 style="color: #2e7d32;">✅ Incident Resolved & Secure</h2>
-              <p>Dear <strong>${victimParent.name}</strong>,</p>
-              <p>We are writing to inform you that the incident involving your child, <strong>${victimName}</strong>, has been fully resolved.</p>
-              <p><strong>Your child is saved, secure, and under the protection of the campus safety team.</strong></p>
-              <p>The situation at <strong>${updated.location}</strong> has been handled by the authorities.</p>
-              <br>
-              <p>Thank you for your cooperation.</p>
-              <p>SafeCampus System</p>
-            </div>
-          `;
-          sendEmail(victimParent.email, subject, html);
-        }
-      }
+      ...
     }
+    */
+
 
     res.json(updated);
   } catch (err) {
