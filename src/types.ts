@@ -22,6 +22,10 @@ export interface PersonDetails {
   phone?: string;
   profilePicture?: string;
   faceRecognitionStatus?: string;
+  parentName?: string;
+  parentPhone?: string;
+  faceDistance?: number;
+  faceThreshold?: number;
 }
 
 export interface Incident {
@@ -35,6 +39,7 @@ export interface Incident {
   victimDept?: string;
   victimSemester?: string;
   suspectedPerson?: string;
+  harasserId?: string;
   date: string;
   time: string;
   location: string;
@@ -48,16 +53,20 @@ export interface Incident {
 }
 
 export interface Student {
+  _id?: string;
   id: string;
   name: string;
   department: string;
   semester: string;
   parentName: string;
   parentPhone: string;
+  phone?: string;
+  cnic?: string;
   photo: string;
   status: "Active" | "Inactive";
   safetyStatus: SafetyStatus;
   email: string;
+  createdAt?: string;
 }
 
 export interface Parent {
@@ -66,13 +75,16 @@ export interface Parent {
   name: string;
   email: string;
   phone: string;
+  cnic?: string;
   address: string;
   profilePicture?: string;
   photo?: string;
   registrationNumber?: string;
   linkedStudentId?: string;
   linkedStudentName?: string;
+  studentSafetyStatus?: SafetyStatus | string;
   status: "Active" | "Inactive";
+  createdAt?: string;
 }
 
 export interface Camera {
@@ -100,6 +112,7 @@ export type AdminPage =
   | "live-monitoring"
   | "harassment-alerts"
   | "incident-management"
+  | "students-parents"
   | "student-management"
   | "camera-management"
   | "parent-management"

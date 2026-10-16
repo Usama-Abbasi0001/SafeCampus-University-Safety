@@ -12,7 +12,11 @@ export default function ParentIncidents({ user }: { user: any }) {
     if (child.id) {
       fetch("/api/incidents")
         .then(r => r.json())
-        .then((data: Incident[]) => setChildIncidents(data.filter(i => i.victimId === child.id)))
+        .then((data: Incident[]) => setChildIncidents(data.filter(i => {
+          const cid = (child.id || "").toLowerCase();
+          const vId = (i.victimId || (typeof i.victim === 'object' ? i.victim?.studentId : "") || "").toLowerCase();
+          return vId === cid;
+        })))
         .catch(console.error);
     }
   }, [child.id]);
@@ -76,8 +80,8 @@ export default function ParentIncidents({ user }: { user: any }) {
 
             <div className="grid grid-cols-2 gap-3">
               {[
-                ["Child Name", selected.victim],
-                ["Student ID", selected.victimId],
+                ["Child Name", typeof selected.victim === 'object' ? selected.victim.name : (selected.victim || "")],
+                ["Student ID", typeof selected.victim === 'object' ? selected.victim.studentId : (selected.victimId || "")],
                 ["Incident Type", selected.type],
                 ["Date", selected.date],
                 ["Time", selected.time],

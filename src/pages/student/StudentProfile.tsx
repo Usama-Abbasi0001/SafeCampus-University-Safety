@@ -10,6 +10,8 @@ export default function StudentProfile({ user }: { user: any }) {
   const [formData, setFormData] = useState({
     name: user.name || "",
     email: user.email || "",
+    phone: user.phone || "",
+    cnic: user.cnic || "",
     parentPhone: user.parentPhone || "",
     parentName: user.parentName || "",
   });
@@ -23,6 +25,8 @@ export default function StudentProfile({ user }: { user: any }) {
           setFormData({
             name: data.name || "",
             email: data.email || "",
+            phone: data.phone || "",
+            cnic: data.cnic || "",
             parentPhone: data.parentPhone || "",
             parentName: data.parentName || "",
           });
@@ -81,11 +85,13 @@ export default function StudentProfile({ user }: { user: any }) {
           {[
             { label: "Full Name", value: student.name },
             { label: "Student ID", value: student.id },
-            { label: "Department", value: student.department },
-            { label: "Semester", value: student.semester },
+            { label: "Department / Class", value: student.department },
+            { label: "Semester / Grade", value: student.semester },
+            { label: "Student Phone", value: student.phone || student.parentPhone || "Not Provided" },
+            { label: "CNIC / B-Form", value: student.cnic || "Not Provided" },
             { label: "Email Address", value: student.email },
             { label: "Parent / Guardian", value: student.parentName },
-            { label: "Parent Phone", value: student.parentPhone },
+            { label: "Parent Contact", value: student.parentPhone },
           ].map((f) => (
             <div key={f.label} className="bg-slate-900/50 rounded-lg p-3">
               <p className="text-[10px] text-slate-500 uppercase tracking-wide font-medium mb-1">{f.label}</p>
@@ -132,7 +138,15 @@ export default function StudentProfile({ user }: { user: any }) {
             <input className="w-full px-3 py-2 text-sm rounded-lg border border-slate-700 bg-slate-900/50 text-white" type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-400 mb-1">Parent Name</label>
+            <label className="block text-xs font-semibold text-slate-400 mb-1">Student Phone</label>
+            <input className="w-full px-3 py-2 text-sm rounded-lg border border-slate-700 bg-slate-900/50 text-white" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 mb-1">CNIC / B-Form</label>
+            <input className="w-full px-3 py-2 text-sm rounded-lg border border-slate-700 bg-slate-900/50 text-white" value={formData.cnic} onChange={e => setFormData({...formData, cnic: e.target.value})} />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 mb-1">Parent / Guardian Name</label>
             <input className="w-full px-3 py-2 text-sm rounded-lg border border-slate-700 bg-slate-900/50 text-white" value={formData.parentName} onChange={e => setFormData({...formData, parentName: e.target.value})} />
           </div>
           <div>

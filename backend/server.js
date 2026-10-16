@@ -30,20 +30,20 @@ mongoose.connect(process.env.MONGO_URI)
 .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
 // Routes
-// const studentRoutes = require('./routes/studentRoutes');
+const studentRoutes = require('./routes/studentRoutes');
 const incidentRoutes = require('./routes/incidentRoutes');
 const cameraRoutes = require('./routes/cameraRoutes');
-// const authRoutes = require('./routes/authRoutes');
+const authRoutes = require('./routes/authRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
-// const parentRoutes = require('./routes/parentRoutes');
+const parentRoutes = require('./routes/parentRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 
-// app.use('/api/students', studentRoutes);
+app.use('/api/students', studentRoutes);
 app.use('/api/incidents', incidentRoutes);
 app.use('/api/cameras', cameraRoutes);
-// app.use('/api/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/settings', settingsRoutes);
-// app.use('/api/parents', parentRoutes);
+app.use('/api/parents', parentRoutes);
 app.use('/api/ai', aiRoutes);
 
 // Root route

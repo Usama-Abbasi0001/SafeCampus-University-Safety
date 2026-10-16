@@ -46,6 +46,7 @@ router.post('/student/signup', upload.single('profilePicture'), async (req, res)
       semester: req.body.currentSemester,
       email: req.body.email,
       password: req.body.password,
+      cnic: req.body.cnic || "",
       photo: photoUrl
     });
 
@@ -108,6 +109,7 @@ router.post('/parent/signup', upload.single('profilePicture'), async (req, res) 
       email: req.body.email,
       password: req.body.password,
       childStudentId: existingStudent.id,
+      cnic: req.body.cnic || "",
       profilePicture: photoUrl
     });
 

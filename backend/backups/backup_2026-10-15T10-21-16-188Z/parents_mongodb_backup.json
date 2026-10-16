@@ -1,0 +1,46 @@
+[
+  {
+    "_id": "6aa92ef0576b0c3aa4ac82c3",
+    "name": "Muhammad Munawar Khan Khanzada",
+    "phone": "03442233110",
+    "address": "Shidi para TDR",
+    "email": "munawar@gmail.com",
+    "password": "munawar",
+    "profilePicture": "/uploads/1789564122885-Snapchat-119249370.jpg",
+    "childStudentId": "2k22-cs-42",
+    "__v": 0
+  },
+  {
+    "_id": "6aa953ead2b3b63a1d4b4a2c",
+    "name": "Muhammad Hanif Dahri",
+    "phone": "+92 327 2997652",
+    "address": "Nawabshaha",
+    "email": "hanif@gmail.com",
+    "password": "hanif",
+    "profilePicture": "http://localhost:5000/uploads/1789481962084.jpg",
+    "childStudentId": "2K22-CS-02",
+    "__v": 0
+  },
+  {
+    "_id": "6aaa76ae90812599d199f9c4",
+    "name": "Muhammad Hussain ",
+    "phone": "03113618923",
+    "address": "Nagori Plot",
+    "email": "aurauh52@gmail.com",
+    "password": "hussain",
+    "profilePicture": "http://localhost:5000/uploads/1789556398245.jpeg",
+    "childStudentId": "2K22-CS-44",
+    "__v": 0
+  },
+  {
+    "_id": "6abe2bf73d3b0ae7d88969b3",
+    "name": "Umar Abbasi",
+    "phone": "03441363990",
+    "address": "North Karachi 5A2 ",
+    "email": "ua767911@gmail.com",
+    "password": "umar",
+    "profilePicture": "http://localhost:5000/uploads/1790847991541.jpeg",
+    "childStudentId": "2k22-cs-51",
+    "__v": 0
+  }
+]

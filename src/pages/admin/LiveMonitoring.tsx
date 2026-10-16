@@ -27,7 +27,7 @@ function LocalWebcamCard({ device, index, aiRunning, loadingAi }: { device?: Med
 
   useEffect(() => {
     let stream: MediaStream | null = null;
-    let intervalId: ReturnType<typeof setInterval>;
+    let intervalId: ReturnType<typeof setInterval> | undefined = undefined;
 
     async function setupCamera() {
       if (aiRunning || loadingAi) return; // Release lock for Python backend
@@ -111,31 +111,49 @@ export default function LiveMonitoring() {
   const [cameras, setCameras] = useState<Camera[]>([]);
   const [filter, setFilter] = useState<"All" | "Active" | "Inactive" | "Maintenance">("All");
   const [aiRunning, setAiRunning] = useState(false);
-  const [loadingAi, setLoadingAi] = useState(true);
+  const [loadingAi, setLoadingAi] = useState(false);
 
   useEffect(() => {
     fetch("/api/cameras")
       .then(r => r.json())
       .then(data => setCameras(data))
       .catch(console.error);
-      
-    // Auto-start AI when entering the page
-    fetch("/api/ai/start", { method: "POST" })
+
+    // Keep AI Engine OFF by default; check status without auto-starting
+    fetch("/api/ai/status")
       .then(r => r.json())
       .then(data => {
-        setAiRunning(data.isRunning);
-        setLoadingAi(false);
+        setAiRunning(data.isRunning || false);
       })
-      .catch(err => {
-        console.error(err);
-        setLoadingAi(false);
-      });
+      .catch(() => setAiRunning(false));
 
-    // Cleanup: Stop AI when leaving the page so the camera turns off
+    // Cleanup: Stop AI when leaving the page so the camera is released
     return () => {
       fetch("/api/ai/stop", { method: "POST" }).catch(console.error);
     };
   }, []);
+
+  const handleToggleAi = () => {
+    if (aiRunning) {
+      setAiRunning(false);
+      setLoadingAi(true);
+      fetch("/api/ai/stop", { method: "POST" })
+        .catch(console.error)
+        .finally(() => setLoadingAi(false));
+    } else {
+      setLoadingAi(true);
+      fetch("/api/ai/start", { method: "POST" })
+        .then(r => r.json())
+        .then(data => {
+          setAiRunning(data.isRunning || true);
+        })
+        .catch(err => {
+          console.error(err);
+          setAiRunning(false);
+        })
+        .finally(() => setLoadingAi(false));
+    }
+  };
 
   const filtered = filter === "All" ? cameras : cameras.filter((c) => c.status === filter);
 
@@ -146,29 +164,19 @@ export default function LiveMonitoring() {
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-bold text-white">Live Monitoring Control</h1>
         
-        <div className="flex items-center gap-3 bg-slate-800/80 px-4 py-2 rounded-lg border border-slate-700/50">
-          <span className="text-sm font-medium text-slate-300">AI Engine</span>
+        <div className="flex items-center gap-3 bg-slate-800/80 px-4 py-2 rounded-xl border border-slate-700/50 shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-slate-300">AI Detection Engine</span>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${aiRunning ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-700 text-slate-400'}`}>
+              {loadingAi ? "..." : aiRunning ? "Active / ON" : "Disabled / OFF"}
+            </span>
+          </div>
           <button 
-            onClick={() => {
-              if (aiRunning) {
-                setAiRunning(false);
-                fetch("/api/ai/stop", { method: "POST" }).catch(console.error);
-              } else {
-                setLoadingAi(true);
-                fetch("/api/ai/start", { method: "POST" })
-                  .then(r => r.json())
-                  .then(data => {
-                    setAiRunning(data.isRunning);
-                    setLoadingAi(false);
-                  })
-                  .catch(err => {
-                    console.error(err);
-                    setLoadingAi(false);
-                  });
-              }
-            }}
+            type="button"
+            onClick={handleToggleAi}
             disabled={loadingAi}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${aiRunning ? 'bg-blue-600' : 'bg-slate-600'} ${loadingAi ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            title={aiRunning ? "Click to Turn Off AI Engine" : "Click to Turn On AI Engine"}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${aiRunning ? 'bg-emerald-600' : 'bg-slate-700'} ${loadingAi ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
           >
             <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${aiRunning ? 'translate-x-6' : 'translate-x-1'}`} />
           </button>

@@ -1,42 +1,34 @@
 import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
-import { AdminPage, Notification } from "./types";
-type AnyPage = AdminPage;
-
+import { AdminPage, StudentPage, ParentPage, Role, Notification } from "./types";
+type AnyPage = AdminPage | StudentPage | ParentPage;
 
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
-import { useRipple } from "./hooks/useRipple";
+import AuthFlow from "./components/auth/AuthFlow";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import LiveMonitoring from "./pages/admin/LiveMonitoring";
 import HarassmentAlerts from "./pages/admin/HarassmentAlerts";
 import IncidentManagement from "./pages/admin/IncidentManagement";
-// import StudentManagement from "./pages/admin/StudentManagement";
-// import ParentManagement from "./pages/admin/ParentManagement";
 import CameraManagement from "./pages/admin/CameraManagement";
 import Reports from "./pages/admin/Reports";
 import AdminSettings from "./pages/admin/AdminSettings";
+import StudentManagement from "./pages/admin/StudentManagement";
+import ParentManagement from "./pages/admin/ParentManagement";
 
-// Student pages (COMMENTED OUT)
-// import StudentDashboard from "./pages/student/StudentDashboard";
-// import StudentProfile from "./pages/student/StudentProfile";
-// import MySafety from "./pages/student/MySafety";
-// import IncidentHistory from "./pages/student/IncidentHistory";
-// import StudentNotifications from "./pages/student/StudentNotifications";
+// Student pages
+import StudentDashboard from "./pages/student/StudentDashboard";
+import StudentProfile from "./pages/student/StudentProfile";
+import MySafety from "./pages/student/MySafety";
+import IncidentHistory from "./pages/student/IncidentHistory";
+import StudentNotifications from "./pages/student/StudentNotifications";
 
-// Parent pages (COMMENTED OUT)
-// import ParentDashboard from "./pages/parent/ParentDashboard";
-// import ChildProfile from "./pages/parent/ChildProfile";
-// import ParentSafety from "./pages/parent/ParentSafety";
-// import ParentIncidents from "./pages/parent/ParentIncidents";
-// import ParentNotifications from "./pages/parent/ParentNotifications";
-
-// --- Login screen (COMMENTED OUT) ---
-// import AuthFlow from "./components/auth/AuthFlow";
-
-
+// Parent pages
+import ParentDashboard from "./pages/parent/ParentDashboard";
+import ParentSafety from "./pages/parent/ParentSafety";
+import ParentIncidents from "./pages/parent/ParentIncidents";
 
 // --- Page titles ---
 const adminTitles: Record<AdminPage, string> = {
@@ -44,14 +36,14 @@ const adminTitles: Record<AdminPage, string> = {
   "live-monitoring": "Live Camera Monitoring",
   "harassment-alerts": "Harassment Alerts",
   "incident-management": "Incident Management",
-  // "student-management": "Student Management",
-  // "parent-management": "Parent Management",
+  "students-parents": "Student Management",
+  "student-management": "Student Management",
+  "parent-management": "Parent Management",
   "camera-management": "Camera Management",
   reports: "Analytics & Reports",
   settings: "System Settings",
 };
 
-/*
 const studentTitles: Record<StudentPage, string> = {
   dashboard: "Student Dashboard",
   profile: "My Profile",
@@ -64,21 +56,31 @@ const parentTitles: Record<ParentPage, string> = {
   dashboard: "Parent Dashboard",
   "child-profile": "Child Profile",
   "safety-status": "Safety Status",
-  incidents: "Incidents",
+  incidents: "Incidents History",
   notifications: "Notifications",
 };
-*/
 
 // --- Main app ---
 export default function App() {
-  // Bypass login completely - Force Admin
-  const [role, setRole] = useState<string>("admin");
-  const [user, setUser] = useState<any>({ name: "Admin", role: "admin" });
+  const [role, setRole] = useState<Role | null>(() => {
+    return (localStorage.getItem("authRole") as Role) || null;
+  });
 
-  
+  const [user, setUser] = useState<any>(() => {
+    try {
+      const stored = localStorage.getItem("authUser");
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [adminPage, setAdminPage] = useState<AdminPage>("dashboard");
+  const [studentPage, setStudentPage] = useState<StudentPage>("dashboard");
+  const [parentPage, setParentPage] = useState<ParentPage>("dashboard");
+
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
-
   const [unreadAlerts, setUnreadAlerts] = useState(0);
 
   useEffect(() => {
@@ -94,8 +96,18 @@ export default function App() {
       socket.on("new_incident", (data) => {
         setToastMessage(`🚨 ALERT: ${data.type} detected at ${data.location}!`);
         setShowToast(true);
-        setTimeout(() => setShowToast(false), 8000); // Hide after 8s
+        setTimeout(() => setShowToast(false), 8000);
         setUnreadAlerts(prev => prev + 1);
+      });
+      return () => {
+        socket.disconnect();
+      };
+    } else if (role === "parent") {
+      const socket = io("http://localhost:5000");
+      socket.on("parent_alert", (data) => {
+        setToastMessage(`🚨 URGENT NOTICE: Incident verified involving your child!`);
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 8000);
       });
       return () => {
         socket.disconnect();
@@ -103,26 +115,26 @@ export default function App() {
     }
   }, [role]);
 
-  /*
   const handleLogin = (r: Role, u: any) => {
     setRole(r);
     setUser(u);
     localStorage.setItem("authRole", r);
     localStorage.setItem("authUser", JSON.stringify(u));
+    if (r === "admin") setAdminPage("dashboard");
+    else if (r === "student") setStudentPage("dashboard");
+    else if (r === "parent") setParentPage("dashboard");
   };
-  */
 
   const handleLogout = () => {
-    // Disabled
+    setRole(null);
+    setUser(null);
+    localStorage.removeItem("authRole");
+    localStorage.removeItem("authUser");
   };
 
-  const [adminPage, setAdminPage] = useState<AdminPage>("dashboard");
-  // const [studentPage, setStudentPage] = useState<StudentPage>("dashboard");
-  // const [parentPage, setParentPage] = useState<ParentPage>("dashboard");
-
-  // if (!role || !user) {
-  //   return <AuthFlow onLogin={handleLogin} />;
-  // }
+  if (!role || !user) {
+    return <AuthFlow onLogin={handleLogin} />;
+  }
 
   const renderAdminPage = () => {
     switch (adminPage) {
@@ -130,15 +142,14 @@ export default function App() {
       case "live-monitoring":     return <LiveMonitoring />;
       case "harassment-alerts":   return <HarassmentAlerts />;
       case "incident-management": return <IncidentManagement />;
-      // case "student-management":  return <StudentManagement />;
-      // case "parent-management":   return <ParentManagement />;
+      case "student-management":  return <StudentManagement />;
+      case "parent-management":   return <ParentManagement />;
       case "camera-management":   return <CameraManagement />;
       case "reports":             return <Reports />;
       case "settings":            return <AdminSettings />;
     }
   };
 
-  /*
   const renderStudentPage = () => {
     switch (studentPage) {
       case "dashboard":     return <StudentDashboard user={user} onNavigate={(p) => setStudentPage(p as StudentPage)} />;
@@ -152,16 +163,14 @@ export default function App() {
   const renderParentPage = () => {
     switch (parentPage) {
       case "dashboard":     return <ParentDashboard user={user} onNavigate={(p) => setParentPage(p as ParentPage)} />;
-      case "child-profile": return <ChildProfile user={user} />;
       case "safety-status": return <ParentSafety user={user} />;
       case "incidents":     return <ParentIncidents user={user} />;
-      case "notifications": return <ParentNotifications user={user} />;
+      default:              return <ParentDashboard user={user} onNavigate={(p) => setParentPage(p as ParentPage)} />;
     }
   };
-  */
 
-  const currentPage = adminPage;
-  const pageTitle = adminTitles[adminPage];
+  const currentPage = (role === "admin" ? adminPage : role === "student" ? studentPage : parentPage) as AnyPage;
+  const pageTitle = role === "admin" ? adminTitles[adminPage] : role === "student" ? studentTitles[studentPage] : parentTitles[parentPage];
 
   const userName = user?.name || "User";
   const userPhoto = user?.profilePicture || user?.photo || null;
@@ -169,7 +178,13 @@ export default function App() {
   const notifications: Notification[] = [];
 
   const handleNavigate = (page: string) => {
-    setAdminPage(page as AdminPage);
+    if (role === "admin") {
+      setAdminPage(page as AdminPage);
+    } else if (role === "student") {
+      setStudentPage(page as StudentPage);
+    } else {
+      setParentPage(page as ParentPage);
+    }
   };
 
   return (
@@ -202,8 +217,8 @@ export default function App() {
         />
         <main className="flex-1 overflow-y-auto">
           {role === "admin" && renderAdminPage()}
-          {/* {role === "student" && renderStudentPage()} */}
-          {/* {role === "parent" && renderParentPage()} */}
+          {role === "student" && renderStudentPage()}
+          {role === "parent" && renderParentPage()}
         </main>
       </div>
     </div>

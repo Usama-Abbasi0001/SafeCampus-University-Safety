@@ -7,7 +7,11 @@ const parentSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   profilePicture: { type: String, default: "" },
-  childStudentId: { type: String, required: true } // References Student.id (Registration Number)
-});
+  childStudentId: { type: String, required: true }, // References Student.id (Registration Number)
+  cnic: { type: String, default: "" },
+  status: { type: String, default: "Active" },
+  createdAt: { type: Date, default: Date.now }
+}, { timestamps: true });
 
 module.exports = mongoose.model('Parent', parentSchema);
+

@@ -11,8 +11,11 @@ const studentSchema = new mongoose.Schema({
   phone: { type: String },
   password: { type: String },
   parentPhone: { type: String },
+  cnic: { type: String, default: "" },
   status: { type: String, default: "Active" }, // Active/Inactive
-  safetyStatus: { type: String, default: "Safe" } // Safe/At Risk
-});
+  safetyStatus: { type: String, default: "Safe" }, // Safe/At Risk
+  createdAt: { type: Date, default: Date.now }
+}, { timestamps: true });
 
 module.exports = mongoose.model('Student', studentSchema);
+

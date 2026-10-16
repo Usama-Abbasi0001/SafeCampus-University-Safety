@@ -45,7 +45,9 @@ router.post('/', upload.single('profilePicture'), async (req, res) => {
     semester: req.body.semester || "8th",
     photo: photo,
     email: req.body.email,
+    phone: req.body.phone,
     parentPhone: req.body.parentPhone,
+    cnic: req.body.cnic || "",
     status: req.body.status || "Active",
     safetyStatus: req.body.safetyStatus || "Safe",
   });

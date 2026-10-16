@@ -17,11 +17,11 @@ const upload = multer({ storage: storage });
 // GET all parents
 router.get('/', async (req, res) => {
   try {
-    const parents = await Parent.find().lean();
+    const parents = await Parent.find().sort({ createdAt: -1, _id: -1 }).lean();
     const Student = require('../models/Student');
     for (let p of parents) {
       if (p.childStudentId) {
-        const student = await Student.findOne({ id: p.childStudentId }).lean();
+        const student = await Student.findOne({ id: new RegExp(`^${p.childStudentId}$`, 'i') }).lean();
         if (student) {
           p.linkedStudentName = student.name;
           p.linkedStudentId = student.id;
@@ -36,10 +36,34 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET single parent by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const parent = await Parent.findById(req.params.id).lean();
+    if (!parent) {
+      return res.status(404).json({ message: "Parent not found" });
+    }
+    const Student = require('../models/Student');
+    if (parent.childStudentId) {
+      const student = await Student.findOne({ id: new RegExp(`^${parent.childStudentId}$`, 'i') }).lean();
+      if (student) {
+        parent.linkedStudent = student;
+        parent.linkedStudentName = student.name;
+        parent.linkedStudentId = student.id;
+        parent.studentSafetyStatus = student.safetyStatus || "Safe";
+      }
+    }
+    parent.id = parent._id;
+    res.json(parent);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // POST a new parent
 router.post('/', upload.single('profilePicture'), async (req, res) => {
   try {
-    const { name, email, phone, address, linkedStudentId, status, password } = req.body;
+    const { name, email, phone, address, linkedStudentId, cnic, status, password } = req.body;
     const photo = req.file ? `/uploads/${req.file.filename}` : '';
     
     // Check if email already exists
@@ -53,6 +77,7 @@ router.post('/', upload.single('profilePicture'), async (req, res) => {
       email,
       phone,
       address,
+      cnic: cnic || "",
       childStudentId: linkedStudentId,
       status: status || "Active",
       password: password || "default123",
@@ -69,9 +94,12 @@ router.post('/', upload.single('profilePicture'), async (req, res) => {
 // PUT update parent
 router.put('/:id', upload.single('profilePicture'), async (req, res) => {
   try {
-    const { name, email, phone, address, linkedStudentId, status, password } = req.body;
+    const { name, email, phone, address, linkedStudentId, cnic, status, password } = req.body;
     let updateData = { name, email, phone, address, childStudentId: linkedStudentId, status };
     
+    if (cnic !== undefined) {
+      updateData.cnic = cnic;
+    }
     if (password) {
       updateData.password = password;
     }

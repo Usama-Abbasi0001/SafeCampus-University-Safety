@@ -1,0 +1,66 @@
+[
+  {
+    "_id": "6ac74a3ed4eac162c5e6bfb2",
+    "id": "INC-1791445566102",
+    "type": "Hand-Raising Detected",
+    "victim": {
+      "name": "Demo Victim"
+    },
+    "harasser": {
+      "name": "Demo Harasser"
+    },
+    "victimId": "Unknown",
+    "date": "2026-10-08",
+    "time": "12:46:06 PM",
+    "location": "Nagori Plot, Tando Allah Yar, Sindh, Pakistan",
+    "latitude": 33.6425,
+    "longitude": 72.993,
+    "cameraId": "CAM-01",
+    "aiConfidence": 85,
+    "duration": 0,
+    "status": "Pending Review",
+    "evidenceImage": "http://localhost:5000/uploads/1791445566065-incident_20261008_124605.jpg",
+    "notes": "Hand-raising gesture detected by AI.",
+    "__v": 0
+  },
+  {
+    "_id": "6ac9fe08d2c02a9aff43d992",
+    "id": "INC-1791622663893",
+    "type": "Intimate Contact (Kissing)",
+    "victim": {
+      "name": "Demo Victim"
+    },
+    "harasser": {
+      "name": "Demo Harasser"
+    },
+    "victimId": "VICTIM-001",
+    "date": "2026-10-10",
+    "time": "1:57:43 PM",
+    "location": "Nagori Plot, Tando Allah Yar, Sindh, Pakistan",
+    "cameraId": "CAM-01",
+    "aiConfidence": 92,
+    "status": "Rejected",
+    "evidenceImage": "http://localhost:5000/uploads/1791622663859-incident_20261010_135743.jpg",
+    "__v": 0
+  },
+  {
+    "_id": "6ac9feeed2c02a9aff43d993",
+    "id": "INC-1791622894719",
+    "type": "Intimate Contact (Kissing)",
+    "victim": {
+      "name": "Demo Victim"
+    },
+    "harasser": {
+      "name": "Demo Harasser"
+    },
+    "victimId": "VICTIM-001",
+    "date": "2026-10-10",
+    "time": "2:01:34 PM",
+    "location": "Nagori Plot, Tando Allah Yar, Sindh, Pakistan",
+    "cameraId": "CAM-01",
+    "aiConfidence": 92,
+    "status": "New",
+    "evidenceImage": "http://localhost:5000/uploads/1791622894702-incident_20261010_140134.jpg",
+    "__v": 0
+  }
+]
