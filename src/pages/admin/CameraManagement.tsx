@@ -2,22 +2,103 @@ import { useState, useEffect } from "react";
 import StatusBadge from "../../components/StatusBadge";
 import RippleButton from "../../components/RippleButton";
 import Modal from "../../components/Modal";
+import { Camera } from "../../types";
 
 export default function CameraManagement() {
-  const [cameraList, setCameraList] = useState<any[]>([]);
+  const [cameraList, setCameraList] = useState<Camera[]>([]);
+  const [addModal, setAddModal] = useState(false);
+  const [editModal, setEditModal] = useState(false);
+  const [activeCam, setActiveCam] = useState<Camera | null>(null);
+  const [search, setSearch] = useState("");
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
-  useEffect(() => {
+  // Form states
+  const [formData, setFormData] = useState({
+    id: "",
+    name: "",
+    location: "",
+    installationAddress: "",
+    latitude: 25.4285,
+    longitude: 68.5392,
+    aiDetection: true,
+    status: "Active" as "Active" | "Inactive" | "Maintenance"
+  });
+
+  const fetchCameras = () => {
     fetch("/api/cameras")
       .then(res => res.json())
       .then(data => setCameraList(data))
       .catch(err => console.error("Failed to fetch cameras:", err));
+  };
+
+  useEffect(() => {
+    fetchCameras();
   }, []);
-  const [addModal, setAddModal] = useState(false);
-  const [search, setSearch] = useState("");
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  const handleOpenEdit = (cam: Camera) => {
+    setActiveCam(cam);
+    setFormData({
+      id: cam.id,
+      name: cam.name,
+      location: cam.location,
+      installationAddress: cam.installationAddress || "",
+      latitude: cam.latitude || 25.4285,
+      longitude: cam.longitude || 68.5392,
+      aiDetection: cam.aiDetection,
+      status: cam.status
+    });
+    setEditModal(true);
+    setOpenMenuId(null);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeCam) return;
+    try {
+      const res = await fetch(`/api/cameras/${activeCam.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+      });
+      if (res.ok) {
+        fetchCameras();
+        setEditModal(false);
+        setActiveCam(null);
+      }
+    } catch (err) {
+      console.error("Failed to update camera:", err);
+    }
+  };
+
+  const handleAddCamera = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch("/api/cameras", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+      });
+      if (res.ok) {
+        fetchCameras();
+        setAddModal(false);
+        setFormData({
+          id: "",
+          name: "",
+          location: "",
+          installationAddress: "",
+          latitude: 25.4285,
+          longitude: 68.5392,
+          aiDetection: true,
+          status: "Active"
+        });
+      }
+    } catch (err) {
+      console.error("Failed to create camera:", err);
+    }
+  };
 
   const filtered = cameraList.filter((c) =>
-    [c.id, c.name, c.location].join(" ").toLowerCase().includes(search.toLowerCase())
+    [c.id, c.name, c.location, c.installationAddress].filter(Boolean).join(" ").toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -42,10 +123,22 @@ export default function CameraManagement() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search cameras…"
+          placeholder="Search cameras by ID, name, verified location…"
           className="flex-1 px-4 py-2 text-sm rounded-lg border border-slate-700 bg-slate-900/50 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
-        <RippleButton variant="primary" onClick={() => setAddModal(true)}>+ Add Camera</RippleButton>
+        <RippleButton variant="primary" onClick={() => {
+          setFormData({
+            id: `CAM-0${cameraList.length + 1}`,
+            name: "",
+            location: "",
+            installationAddress: "",
+            latitude: 25.4285,
+            longitude: 68.5392,
+            aiDetection: true,
+            status: "Active"
+          });
+          setAddModal(true);
+        }}>+ Add Camera</RippleButton>
       </div>
 
       {/* Table */}
@@ -54,7 +147,7 @@ export default function CameraManagement() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-slate-800/90 border-b border-slate-700/50">
-                {["Camera ID", "Camera Name", "Location", "Status", "AI Detection", "Detected Persons", "Last Active", "Action"].map((h) => (
+                {["Camera ID", "Camera Name", "Verified Location & Address", "Coordinates", "Status", "AI Detection", "Last Active", "Action"].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -71,14 +164,27 @@ export default function CameraManagement() {
                       <span className="text-sm font-medium text-white whitespace-nowrap">{cam.name}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-xs text-slate-400 max-w-48 truncate">{cam.location}</td>
+                  <td className="px-4 py-3 text-xs max-w-64">
+                    <p className="font-semibold text-slate-200">{cam.location}</p>
+                    {cam.installationAddress && (
+                      <p className="text-slate-400 text-[11px] mt-0.5">{cam.installationAddress}</p>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 mono text-[11px] text-slate-400 whitespace-nowrap">
+                    {cam.latitude && cam.longitude ? (
+                      <span className="text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
+                        {cam.latitude.toFixed(4)}, {cam.longitude.toFixed(4)}
+                      </span>
+                    ) : (
+                      <span className="text-slate-500">Not set</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 whitespace-nowrap"><StatusBadge status={cam.status} size="sm" /></td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span className={`mono text-xs font-semibold px-2 py-1 rounded-md ${cam.aiDetection ? "bg-blue-500/10 text-blue-400" : "bg-slate-700/50 text-slate-400"}`}>
                       {cam.aiDetection ? "Enabled" : "Disabled"}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-sm font-semibold text-white whitespace-nowrap text-center">{cam.detectedPersons}</td>
                   <td className="px-4 py-3 text-xs text-slate-400 whitespace-nowrap">
                     {cam.lastActive === "Live" ? (
                       <span className="flex items-center gap-1.5 text-green-400 font-medium">
@@ -96,9 +202,8 @@ export default function CameraManagement() {
                       </svg>
                     </button>
                     {openMenuId === cam.id && (
-                      <div className="absolute right-0 mt-2 w-32 bg-slate-800 rounded-lg shadow-lg border border-slate-700 z-10 py-1 text-sm font-medium">
-                        <button onClick={() => { alert(`Viewing ${cam.name}`); setOpenMenuId(null); }} className="block w-full text-left px-4 py-2 text-slate-300 hover:bg-slate-700">View</button>
-                        <button onClick={() => { alert(`Editing ${cam.name}`); setOpenMenuId(null); }} className="block w-full text-left px-4 py-2 text-slate-300 hover:bg-slate-700">Edit</button>
+                      <div className="absolute right-0 mt-2 w-36 bg-slate-800 rounded-lg shadow-lg border border-slate-700 z-10 py-1 text-sm font-medium">
+                        <button onClick={() => handleOpenEdit(cam)} className="block w-full text-left px-4 py-2 text-slate-300 hover:bg-slate-700">Configure Location</button>
                         <button 
                           onClick={async () => {
                             const newStatus = cam.status === "Active" ? "Maintenance" : "Active";
@@ -109,7 +214,7 @@ export default function CameraManagement() {
                                 body: JSON.stringify({ status: newStatus })
                               });
                               if (res.ok) {
-                                setCameraList(cameraList.map(c => c.id === cam.id ? { ...c, status: newStatus } : c));
+                                fetchCameras();
                               }
                             } catch (err) {
                               console.error("Failed to update status", err);
@@ -149,28 +254,151 @@ export default function CameraManagement() {
         </div>
       </div>
 
-      <Modal open={addModal} onClose={() => setAddModal(false)} title="Add New Camera">
-        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); setAddModal(false); }}>
+      {/* Add Camera Modal */}
+      <Modal open={addModal} onClose={() => setAddModal(false)} title="Add CCTV Camera with Verified Location">
+        <form className="space-y-4" onSubmit={handleAddCamera}>
           <div className="grid grid-cols-2 gap-4">
-            {[
-              { label: "Camera ID", placeholder: "CAM-007" },
-              { label: "Camera Name", placeholder: "e.g. Science Block Entrance" },
-              { label: "Location", placeholder: "Full location description" },
-              { label: "IP Address", placeholder: "192.168.1.100" },
-            ].map((f) => (
-              <div key={f.label}>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">{f.label}</label>
-                <input placeholder={f.placeholder} className="w-full px-3 py-2 text-sm rounded-lg border border-slate-700 bg-slate-900/50 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
-            ))}
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 mb-1">Camera ID *</label>
+              <input 
+                required 
+                value={formData.id} 
+                onChange={(e) => setFormData({ ...formData, id: e.target.value })}
+                placeholder="CAM-01" 
+                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-700 bg-slate-900/50 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 mb-1">Camera Name *</label>
+              <input 
+                required 
+                value={formData.name} 
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g. Science Block Entrance" 
+                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-700 bg-slate-900/50 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs font-semibold text-slate-400 mb-1">Verified Physical Location *</label>
+              <input 
+                required 
+                value={formData.location} 
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                placeholder="e.g. Central Academic Block - Floor 1 Corridor" 
+                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-700 bg-slate-900/50 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs font-semibold text-slate-400 mb-1">Installation Address / Mounting Post</label>
+              <input 
+                value={formData.installationAddress} 
+                onChange={(e) => setFormData({ ...formData, installationAddress: e.target.value })}
+                placeholder="e.g. Academic Complex Block A, Central Pillar 3" 
+                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-700 bg-slate-900/50 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 mb-1">Latitude</label>
+              <input 
+                type="number" 
+                step="0.0001" 
+                value={formData.latitude} 
+                onChange={(e) => setFormData({ ...formData, latitude: parseFloat(e.target.value) || 0 })}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-700 bg-slate-900/50 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 mb-1">Longitude</label>
+              <input 
+                type="number" 
+                step="0.0001" 
+                value={formData.longitude} 
+                onChange={(e) => setFormData({ ...formData, longitude: parseFloat(e.target.value) || 0 })}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-700 bg-slate-900/50 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+              />
+            </div>
           </div>
           <div className="flex items-center gap-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-            <input type="checkbox" id="ai-toggle" className="w-4 h-4 accent-blue-500" defaultChecked />
-            <label htmlFor="ai-toggle" className="text-sm text-blue-400 font-medium">Enable AI Harassment Detection</label>
+            <input 
+              type="checkbox" 
+              id="ai-toggle" 
+              className="w-4 h-4 accent-blue-500" 
+              checked={formData.aiDetection}
+              onChange={(e) => setFormData({ ...formData, aiDetection: e.target.checked })}
+            />
+            <label htmlFor="ai-toggle" className="text-sm text-blue-400 font-medium">Enable AI Detection for this Camera</label>
           </div>
           <div className="flex gap-3">
             <RippleButton type="submit" variant="primary" className="flex-1">Add Camera</RippleButton>
             <RippleButton type="button" variant="outline" className="flex-1" onClick={() => setAddModal(false)}>Cancel</RippleButton>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit Camera Modal */}
+      <Modal open={editModal} onClose={() => setEditModal(false)} title={`Configure Location - ${activeCam?.id}`}>
+        <form className="space-y-4" onSubmit={handleSaveEdit}>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 mb-1">Camera ID</label>
+              <input 
+                disabled 
+                value={formData.id} 
+                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-700 bg-slate-800 text-slate-400 cursor-not-allowed" 
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 mb-1">Camera Name *</label>
+              <input 
+                required 
+                value={formData.name} 
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-700 bg-slate-900/50 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs font-semibold text-slate-400 mb-1">Verified Physical Campus Location *</label>
+              <input 
+                required 
+                value={formData.location} 
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                placeholder="e.g. Central Academic Block - Floor 1 Corridor" 
+                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-700 bg-slate-900/50 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs font-semibold text-slate-400 mb-1">Installation Address / Mounting Post</label>
+              <input 
+                value={formData.installationAddress} 
+                onChange={(e) => setFormData({ ...formData, installationAddress: e.target.value })}
+                placeholder="e.g. Academic Complex Block A, Central Pillar 3" 
+                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-700 bg-slate-900/50 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 mb-1">Latitude</label>
+              <input 
+                type="number" 
+                step="0.0001" 
+                value={formData.latitude} 
+                onChange={(e) => setFormData({ ...formData, latitude: parseFloat(e.target.value) || 0 })}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-700 bg-slate-900/50 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 mb-1">Longitude</label>
+              <input 
+                type="number" 
+                step="0.0001" 
+                value={formData.longitude} 
+                onChange={(e) => setFormData({ ...formData, longitude: parseFloat(e.target.value) || 0 })}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-700 bg-slate-900/50 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+              />
+            </div>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <RippleButton type="submit" variant="primary" className="flex-1">Save Verified Location</RippleButton>
+            <RippleButton type="button" variant="outline" className="flex-1" onClick={() => setEditModal(false)}>Cancel</RippleButton>
           </div>
         </form>
       </Modal>

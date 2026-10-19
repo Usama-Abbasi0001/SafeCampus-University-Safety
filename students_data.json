@@ -1,5 +1,32 @@
 [
   {
+    "id": "2k22-cs-44",
+    "name": "M.Usama Abbasi",
+    "parentName": "M.Hussain Abbasi",
+    "department": "Computer Science",
+    "semester": "8th Semester",
+    "email": "usamakhan58461@gmail.com",
+    "phone": "03304180777"
+  },
+  {
+    "id": "2k22-cs-42",
+    "name": "M.Huzaifa",
+    "parentName": "M.Munawar Khan",
+    "department": "BSCS",
+    "semester": "8th Semester",
+    "email": "huzaifakhanzada@9080",
+    "phone": "03153312100"
+  },
+  {
+    "id": "2k22-cs-04",
+    "name": "Muhammad Haris",
+    "parentName": "Tariq Mehmood",
+    "department": "Computer Science",
+    "semester": "8th Semester",
+    "email": "haris.cs@safecampus.edu",
+    "phone": "03120000004"
+  },
+  {
     "id": "2k22-cs-46",
     "name": "Owais Ahmed",
     "parentName": "Ishtiaq Ahmed",
@@ -7,5 +34,14 @@
     "semester": "8th Semester",
     "email": "owaisahmed11feb@gmail.com",
     "phone": "03363437354"
+  },
+  {
+    "id": "2k22-cs-27",
+    "name": "Usaid",
+    "parentName": "Shafiq",
+    "department": "BSCS",
+    "semester": "6th Semester",
+    "email": "usaidkhatri05@gmail.com",
+    "phone": "03132532868"
   }
 ]

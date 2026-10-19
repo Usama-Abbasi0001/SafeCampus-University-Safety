@@ -171,6 +171,27 @@ export default function AdminDashboard({ onNavigate }: { onNavigate: (p: string)
 
 function IncidentDetail({ inc, onStatusUpdate }: { inc: Incident, onStatusUpdate: (status: string) => void }) {
   const confColor = (c: number) => c >= 90 ? "text-red-400 bg-red-500/10 border-red-500/20" : c >= 75 ? "text-amber-400 bg-amber-500/10 border-amber-500/20" : "text-green-400 bg-green-500/10 border-green-500/20";
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailStatus, setEmailStatus] = useState<string | null>(null);
+
+  const handleSendParentEmail = async () => {
+    setSendingEmail(true);
+    setEmailStatus(null);
+    try {
+      const res = await fetch(`/api/incidents/${inc.id}/send-parent-email`, { method: "POST" });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setEmailStatus(`✅ Notice sent to ${data.parentEmail} (${data.parentName})`);
+      } else {
+        setEmailStatus(`⚠️ ${data.message || "Failed to deliver email"}`);
+      }
+    } catch (e: any) {
+      setEmailStatus(`❌ Error: ${e.message}`);
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 gap-4">
@@ -257,10 +278,30 @@ function IncidentDetail({ inc, onStatusUpdate }: { inc: Incident, onStatusUpdate
         </div>
       </div>
 
-      <div className="flex gap-3 pt-2">
-        <RippleButton variant="danger" className="flex-1" onClick={() => onStatusUpdate("Confirmed")}>Confirm Incident</RippleButton>
-        <RippleButton variant="outline" className="flex-1" onClick={() => onStatusUpdate("Rejected")}>Mark as Rejected</RippleButton>
-        <RippleButton variant="primary" className="flex-1" onClick={() => onStatusUpdate("Under Review")}>Set Under Review</RippleButton>
+      <div className="space-y-3 pt-2">
+        <div className="flex gap-3">
+          <RippleButton variant="danger" className="flex-1" onClick={() => onStatusUpdate("Confirmed")}>Confirm Incident</RippleButton>
+          <RippleButton variant="outline" className="flex-1" onClick={() => onStatusUpdate("Rejected")}>Mark as Rejected</RippleButton>
+          <RippleButton variant="primary" className="flex-1" onClick={() => onStatusUpdate("Under Review")}>Set Under Review</RippleButton>
+        </div>
+
+        {/* Parent Email Trigger Button */}
+        <div className="pt-2 border-t border-slate-700/60">
+          <button
+            type="button"
+            onClick={handleSendParentEmail}
+            disabled={sendingEmail}
+            className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+          >
+            <span>📧</span>
+            <span>{sendingEmail ? "Dispatching Official Email..." : "Send Verified Incident Notice to Parent Email"}</span>
+          </button>
+          {emailStatus && (
+            <p className="text-xs text-center mt-2 font-medium text-slate-300 bg-slate-900/70 py-1.5 px-3 rounded-lg border border-slate-700/50">
+              {emailStatus}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

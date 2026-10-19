@@ -54,11 +54,43 @@ router.post('/', upload.single('profilePicture'), async (req, res) => {
 
   try {
     const newStudent = await student.save();
+    if (req.file) {
+      syncPhotoToKnownFaces(req.body.id, req.file.path);
+    } else if (photo) {
+      syncPhotoToKnownFaces(req.body.id, photo);
+    }
     res.status(201).json(newStudent);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 });
+
+// Helper to sync student photo with known_faces for face recognition
+const syncPhotoToKnownFaces = (studentId, photoPath) => {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const normId = studentId.toLowerCase();
+    const kfDir = path.join(__dirname, '..', '..', 'ai_module', 'known_faces');
+    if (!fs.existsSync(kfDir)) fs.mkdirSync(kfDir, { recursive: true });
+
+    let sourcePath = photoPath;
+    if (sourcePath.includes('/uploads/')) {
+      const filename = sourcePath.split('/uploads/').pop();
+      sourcePath = path.join(__dirname, '..', 'uploads', filename);
+    } else if (sourcePath.startsWith('uploads/')) {
+      sourcePath = path.join(__dirname, '..', sourcePath);
+    }
+
+    if (fs.existsSync(sourcePath)) {
+      const dest = path.join(kfDir, `${normId}.jpeg`);
+      fs.copyFileSync(sourcePath, dest);
+      console.log(`✅ [STUDENT PHOTO SYNC] Synced photo for ${normId} to known_faces/${normId}.jpeg`);
+    }
+  } catch (err) {
+    console.error('❌ [STUDENT PHOTO SYNC ERROR]:', err);
+  }
+};
 
 // PUT update student
 router.put('/:id', upload.single('profilePicture'), async (req, res) => {
@@ -66,13 +98,18 @@ router.put('/:id', upload.single('profilePicture'), async (req, res) => {
     let updateData = { ...req.body };
     if (req.file) {
       updateData.photo = `/uploads/${req.file.filename}`;
+      syncPhotoToKnownFaces(req.params.id, req.file.path);
+    } else if (updateData.photo) {
+      syncPhotoToKnownFaces(req.params.id, updateData.photo);
     }
+
     const updatedStudent = await Student.findOneAndUpdate(
       { id: req.params.id },
       updateData,
       { new: true }
     );
     if (!updatedStudent) return res.status(404).json({ message: "Student not found" });
+
     res.json(updatedStudent);
   } catch (err) {
     res.status(400).json({ message: err.message });

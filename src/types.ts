@@ -91,11 +91,14 @@ export interface Camera {
   id: string;
   name: string;
   location: string;
+  installationAddress?: string;
+  latitude?: number;
+  longitude?: number;
   status: "Active" | "Inactive" | "Maintenance";
   aiDetection: boolean;
   detectedPersons: number;
   lastActive: string;
-  feed: string;
+  feed?: string;
 }
 
 export interface Notification {

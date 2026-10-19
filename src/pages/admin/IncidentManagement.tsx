@@ -27,14 +27,33 @@ export default function IncidentManagement() {
   const [selected, setSelected] = useState<Incident | null>(null);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-
   const [incidentList, setIncidentList] = useState<Incident[]>([]);
+  const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
+  const [emailStatusMsg, setEmailStatusMsg] = useState<string | null>(null);
 
   const fetchIncidents = () => {
     fetch("/api/incidents")
       .then(res => res.json())
       .then(data => setIncidentList(data))
       .catch(err => console.error("Failed to fetch incidents:", err));
+  };
+
+  const handleSendParentEmail = async (incidentId: string) => {
+    setSendingEmailId(incidentId);
+    setEmailStatusMsg(null);
+    try {
+      const res = await fetch(`/api/incidents/${incidentId}/send-parent-email`, { method: "POST" });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setEmailStatusMsg(`✅ Notice sent to ${data.parentEmail} (${data.parentName})`);
+      } else {
+        setEmailStatusMsg(`⚠️ ${data.message || "Failed to deliver email"}`);
+      }
+    } catch (e: any) {
+      setEmailStatusMsg(`❌ Error: ${e.message}`);
+    } finally {
+      setSendingEmailId(null);
+    }
   };
 
   useEffect(() => {
@@ -301,16 +320,36 @@ export default function IncidentManagement() {
               <img src={selected.evidenceImage} alt="Evidence" className="w-full h-64 object-contain rounded-xl bg-slate-800 border border-slate-700/50" />
             </div>
 
-            <div className="flex gap-2 mt-4">
-              <RippleButton variant="danger" className="flex-1" onClick={() => handleUpdateStatus("Confirmed")}>Confirm</RippleButton>
-              <RippleButton variant="outline" className="flex-1" onClick={() => handleUpdateStatus("Rejected")}>Reject</RippleButton>
-              <RippleButton variant="primary" className="flex-1" onClick={() => handleUpdateStatus("Under Review")}>Review</RippleButton>
-              <button 
-                onClick={() => handleUpdateStatus("Resolved")}
-                className="flex-1 py-2 rounded-lg text-sm font-semibold transition-colors bg-green-500/10 text-green-400 hover:bg-green-500/20 border border-green-500/30"
-              >
-                Mark Safe
-              </button>
+            <div className="space-y-3 mt-4">
+              <div className="flex gap-2">
+                <RippleButton variant="danger" className="flex-1" onClick={() => handleUpdateStatus("Confirmed")}>Confirm</RippleButton>
+                <RippleButton variant="outline" className="flex-1" onClick={() => handleUpdateStatus("Rejected")}>Reject</RippleButton>
+                <RippleButton variant="primary" className="flex-1" onClick={() => handleUpdateStatus("Under Review")}>Review</RippleButton>
+                <button 
+                  onClick={() => handleUpdateStatus("Resolved")}
+                  className="flex-1 py-2 rounded-lg text-sm font-semibold transition-colors bg-green-500/10 text-green-400 hover:bg-green-500/20 border border-green-500/30"
+                >
+                  Mark Safe
+                </button>
+              </div>
+
+              {/* Direct Parent Email Action */}
+              <div className="pt-2 border-t border-slate-700/60">
+                <button
+                  type="button"
+                  onClick={() => handleSendParentEmail(selected.id)}
+                  disabled={sendingEmailId === selected.id}
+                  className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+                >
+                  <span>📧</span>
+                  <span>{sendingEmailId === selected.id ? "Dispatching Official Email..." : "Send Verified Incident Notice to Parent Email"}</span>
+                </button>
+                {emailStatusMsg && (
+                  <p className="text-xs text-center mt-2 font-medium text-slate-300 bg-slate-900/70 py-1.5 px-3 rounded-lg border border-slate-700/50">
+                    {emailStatusMsg}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         )}

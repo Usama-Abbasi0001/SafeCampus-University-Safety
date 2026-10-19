@@ -13,6 +13,8 @@ export default function HarassmentAlerts() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [statusFilter, setStatusFilter] = useState<IncidentStatus | "All">("All");
   const [selected, setSelected] = useState<Incident | null>(null);
+  const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
+  const [emailStatusMsg, setEmailStatusMsg] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/incidents")
@@ -20,6 +22,24 @@ export default function HarassmentAlerts() {
       .then(data => setIncidents(data))
       .catch(console.error);
   }, []);
+
+  const handleSendParentEmail = async (incidentId: string) => {
+    setSendingEmailId(incidentId);
+    setEmailStatusMsg(null);
+    try {
+      const res = await fetch(`/api/incidents/${incidentId}/send-parent-email`, { method: "POST" });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setEmailStatusMsg(`✅ Notice sent to ${data.parentEmail} (${data.parentName})`);
+      } else {
+        setEmailStatusMsg(`⚠️ ${data.message || "Failed to deliver email"}`);
+      }
+    } catch (e: any) {
+      setEmailStatusMsg(`❌ Error: ${e.message}`);
+    } finally {
+      setSendingEmailId(null);
+    }
+  };
 
   const updateStatus = async (status: IncidentStatus) => {
     if (!selected) return;
@@ -100,6 +120,16 @@ export default function HarassmentAlerts() {
                     <RippleButton variant="primary" size="sm" onClick={() => setSelected(inc)}>
                       View Details
                     </RippleButton>
+                    <button
+                      type="button"
+                      onClick={() => handleSendParentEmail(inc.id)}
+                      disabled={sendingEmailId === inc.id}
+                      className="px-2.5 py-1 text-xs font-semibold bg-indigo-600/80 hover:bg-indigo-600 text-white rounded-lg transition-colors flex items-center justify-center gap-1 shadow-sm"
+                      title="Send notification to parent email"
+                    >
+                      <span>📧</span>
+                      <span>{sendingEmailId === inc.id ? "Sending..." : "Email Parent"}</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -213,10 +243,30 @@ export default function HarassmentAlerts() {
               <img src={selected.evidenceImage} alt="Evidence" className="w-full h-52 object-cover rounded-xl bg-slate-800" />
             </div>
 
-            <div className="flex gap-2 pt-1">
-              <RippleButton variant="danger" className="flex-1" onClick={() => updateStatus("Confirmed")}>Confirm Incident</RippleButton>
-              <RippleButton variant="outline" className="flex-1" onClick={() => updateStatus("Rejected")}>Reject</RippleButton>
-              <RippleButton variant="primary" className="flex-1" onClick={() => updateStatus("Under Review")}>Set Under Review</RippleButton>
+            <div className="space-y-3 pt-2">
+              <div className="flex gap-2">
+                <RippleButton variant="danger" className="flex-1" onClick={() => updateStatus("Confirmed")}>Confirm Incident</RippleButton>
+                <RippleButton variant="outline" className="flex-1" onClick={() => updateStatus("Rejected")}>Reject</RippleButton>
+                <RippleButton variant="primary" className="flex-1" onClick={() => updateStatus("Under Review")}>Set Under Review</RippleButton>
+              </div>
+
+              {/* Direct Parent Email Action */}
+              <div className="pt-2 border-t border-slate-700/60">
+                <button
+                  type="button"
+                  onClick={() => handleSendParentEmail(selected.id)}
+                  disabled={sendingEmailId === selected.id}
+                  className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+                >
+                  <span>📧</span>
+                  <span>{sendingEmailId === selected.id ? "Dispatching Official Email..." : "Send Verified Incident Notice to Parent Email"}</span>
+                </button>
+                {emailStatusMsg && (
+                  <p className="text-xs text-center mt-2 font-medium text-slate-300 bg-slate-900/70 py-1.5 px-3 rounded-lg border border-slate-700/50">
+                    {emailStatusMsg}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         )}

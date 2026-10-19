@@ -1,0 +1,4 @@
+{
+  "watch": ["server.js", "routes", "models"],
+  "ignore": ["uploads/*", "node_modules/*", "*.jpg", "*.jpeg", "*.png"]
+}
