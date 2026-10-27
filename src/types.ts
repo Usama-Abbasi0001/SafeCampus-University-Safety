@@ -82,6 +82,8 @@ export interface Parent {
   registrationNumber?: string;
   linkedStudentId?: string;
   linkedStudentName?: string;
+  childStudentId?: string;
+  password?: string;
   studentSafetyStatus?: SafetyStatus | string;
   status: "Active" | "Inactive";
   createdAt?: string;
@@ -115,7 +117,6 @@ export type AdminPage =
   | "live-monitoring"
   | "harassment-alerts"
   | "incident-management"
-  | "students-parents"
   | "student-management"
   | "camera-management"
   | "parent-management"

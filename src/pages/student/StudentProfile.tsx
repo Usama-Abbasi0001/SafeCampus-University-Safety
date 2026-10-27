@@ -4,41 +4,43 @@ import RippleButton from "../../components/RippleButton";
 import Modal from "../../components/Modal";
 
 export default function StudentProfile({ user }: { user: any }) {
-  const [student, setStudent] = useState(user);
+  const [student, setStudent] = useState(user || {});
   const [settings, setSettings] = useState<any>(null);
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
-    name: user.name || "",
-    email: user.email || "",
-    phone: user.phone || "",
-    cnic: user.cnic || "",
-    parentPhone: user.parentPhone || "",
-    parentName: user.parentName || "",
+    name: user?.name || "",
+    email: user?.email || "",
+    phone: user?.phone || "",
+    cnic: user?.cnic || "",
+    parentPhone: user?.parentPhone || "",
+    parentName: user?.parentName || "",
   });
 
   useEffect(() => {
-    fetch(`/api/students/${user.id}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.id) {
-          setStudent(data);
-          setFormData({
-            name: data.name || "",
-            email: data.email || "",
-            phone: data.phone || "",
-            cnic: data.cnic || "",
-            parentPhone: data.parentPhone || "",
-            parentName: data.parentName || "",
-          });
-        }
-      })
-      .catch(err => console.error("Failed to load student data", err));
+    if (user?.id) {
+      fetch(`/api/students/${user.id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.id) {
+            setStudent(data);
+            setFormData({
+              name: data.name || "",
+              email: data.email || "",
+              phone: data.phone || "",
+              cnic: data.cnic || "",
+              parentPhone: data.parentPhone || "",
+              parentName: data.parentName || "",
+            });
+          }
+        })
+        .catch(err => console.error("Failed to load student data", err));
+    }
 
     fetch("/api/settings")
       .then(res => res.json())
       .then(data => setSettings(data))
       .catch(err => console.error("Failed to load settings", err));
-  }, [user.id]);
+  }, [user?.id]);
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();

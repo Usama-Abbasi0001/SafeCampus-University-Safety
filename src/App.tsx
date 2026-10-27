@@ -27,8 +27,10 @@ import StudentNotifications from "./pages/student/StudentNotifications";
 
 // Parent pages
 import ParentDashboard from "./pages/parent/ParentDashboard";
+import ChildProfile from "./pages/parent/ChildProfile";
 import ParentSafety from "./pages/parent/ParentSafety";
 import ParentIncidents from "./pages/parent/ParentIncidents";
+import ParentNotifications from "./pages/parent/ParentNotifications";
 
 // --- Page titles ---
 const adminTitles: Record<AdminPage, string> = {
@@ -36,7 +38,6 @@ const adminTitles: Record<AdminPage, string> = {
   "live-monitoring": "Live Camera Monitoring",
   "harassment-alerts": "Harassment Alerts",
   "incident-management": "Incident Management",
-  "students-parents": "Student Management",
   "student-management": "Student Management",
   "parent-management": "Parent Management",
   "camera-management": "Camera Management",
@@ -163,8 +164,10 @@ export default function App() {
   const renderParentPage = () => {
     switch (parentPage) {
       case "dashboard":     return <ParentDashboard user={user} onNavigate={(p) => setParentPage(p as ParentPage)} />;
+      case "child-profile": return <ChildProfile user={user} />;
       case "safety-status": return <ParentSafety user={user} />;
       case "incidents":     return <ParentIncidents user={user} />;
+      case "notifications": return <ParentNotifications user={user} />;
       default:              return <ParentDashboard user={user} onNavigate={(p) => setParentPage(p as ParentPage)} />;
     }
   };

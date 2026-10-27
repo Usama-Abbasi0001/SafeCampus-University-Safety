@@ -72,13 +72,14 @@ router.post('/', upload.single('profilePicture'), async (req, res) => {
       return res.status(400).json({ message: "Email already registered" });
     }
 
+    const studentIdToLink = linkedStudentId || req.body.childStudentId;
     const newParent = new Parent({
       name,
       email,
       phone,
       address,
       cnic: cnic || "",
-      childStudentId: linkedStudentId,
+      childStudentId: studentIdToLink,
       status: status || "Active",
       password: password || "default123",
       profilePicture: photo
@@ -95,7 +96,11 @@ router.post('/', upload.single('profilePicture'), async (req, res) => {
 router.put('/:id', upload.single('profilePicture'), async (req, res) => {
   try {
     const { name, email, phone, address, linkedStudentId, cnic, status, password } = req.body;
-    let updateData = { name, email, phone, address, childStudentId: linkedStudentId, status };
+    const studentIdToLink = linkedStudentId || req.body.childStudentId;
+    let updateData = { name, email, phone, address, status };
+    if (studentIdToLink) {
+      updateData.childStudentId = studentIdToLink;
+    }
     
     if (cnic !== undefined) {
       updateData.cnic = cnic;

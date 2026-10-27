@@ -4,7 +4,6 @@ import RippleButton from "../../components/RippleButton";
 
 export default function ChildProfile({ user }: { user: any }) {
   const child = user?.linkedStudent || {};
-  const [editing, setEditing] = useState(false);
   const [settings, setSettings] = useState<any>(null);
 
   useEffect(() => {
@@ -18,7 +17,11 @@ export default function ChildProfile({ user }: { user: any }) {
     <div className="p-6 max-w-2xl space-y-5 animate-fade-in">
       <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl shadow-sm border border-slate-700/50 p-6">
         <div className="flex items-center gap-5 mb-6">
-          <img src={child.photo} alt={child.name} className="w-24 h-24 rounded-2xl object-cover bg-slate-900 ring-4 ring-slate-700" />
+          <img
+            src={child.photo || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80"}
+            alt={child.name || "Student"}
+            className="w-24 h-24 rounded-2xl object-cover bg-slate-900 ring-4 ring-slate-700"
+          />
           <div>
             <h2 className="text-xl font-bold text-white" style={{ fontFamily: "'DM Sans', sans-serif" }}>{child.name}</h2>
             <p className="mono text-sm text-blue-400 font-medium mt-0.5">{child.id}</p>
